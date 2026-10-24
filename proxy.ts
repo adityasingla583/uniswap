@@ -5,7 +5,7 @@ export function proxy(request: NextRequest) {
   const session = request.cookies.get("session")?.value;
   const { pathname } = request.nextUrl;
 
-  const protectedRoutes = ["/listings/create", "/favorites", "/my-listings"];
+  const protectedRoutes = ["/listings/create", "/favorites", "/my-listings", "/chats"];
   const isProtected = protectedRoutes.some((route) => pathname.startsWith(route));
 
   if (isProtected && !session) {
@@ -18,5 +18,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/listings/create", "/favorites", "/my-listings"],
+  matcher: ["/listings/create", "/favorites", "/my-listings", "/chats/:path*"],
 };

@@ -37,13 +37,21 @@ export default async function MyListingsPage() {
           </div>
         </div>
 
-        <Link
-          href="/listings/create"
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover shadow-sm transition-all"
-        >
-          <Plus className="h-4 w-4" />
-          Post New Item
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/"
+            className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted transition-all"
+          >
+            Home
+          </Link>
+          <Link
+            href="/listings/create"
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-xs sm:text-sm font-semibold text-white hover:bg-primary-hover shadow-sm transition-all"
+          >
+            <Plus className="h-4 w-4" />
+            Post New Item
+          </Link>
+        </div>
       </div>
 
       {listings.length === 0 ? (

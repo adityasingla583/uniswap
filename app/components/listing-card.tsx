@@ -23,12 +23,36 @@ type ListingCardProps = {
 
 const categoryColors: Record<string, string> = {
   BOOKS: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
-  FURNITURE: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+  CYCLES_VEHICLES: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
   ELECTRONICS: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300",
+  DORM_FURNITURE: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+  FURNITURE: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+  APPLIANCES: "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300",
   CLOTHING: "bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300",
+  SPORTS_FITNESS: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300",
+  STATIONERY_LAB: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300",
+  SERVICES_TICKETS: "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300",
   FREE: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
   OTHER: "bg-gray-100 text-gray-700 dark:bg-gray-800/40 dark:text-gray-300",
 };
+
+function formatCategory(cat: string) {
+  const map: Record<string, string> = {
+    BOOKS: "Books",
+    CYCLES_VEHICLES: "Cycles & Helmets",
+    ELECTRONICS: "Electronics",
+    DORM_FURNITURE: "Dorm Furniture",
+    FURNITURE: "Furniture",
+    APPLIANCES: "Appliances",
+    CLOTHING: "Clothing",
+    SPORTS_FITNESS: "Sports & Fitness",
+    STATIONERY_LAB: "Stationery & Lab",
+    SERVICES_TICKETS: "Cabs & Passes",
+    FREE: "Free",
+    OTHER: "Other",
+  };
+  return map[cat] || cat;
+}
 
 export function ListingCard({
   id,
@@ -92,11 +116,11 @@ export function ListingCard({
         {/* Category Badge */}
         <div
           className={cn(
-            "absolute top-2 right-2 rounded-full px-2.5 py-1 text-xs font-semibold",
+            "absolute top-2 right-2 rounded-full px-2.5 py-1 text-xs font-semibold backdrop-blur-sm shadow-sm",
             categoryColors[category] || categoryColors.OTHER
           )}
         >
-          {category}
+          {formatCategory(category)}
         </div>
         {/* Favorite Button */}
         {isLoggedIn && (
@@ -125,20 +149,27 @@ export function ListingCard({
         <p className="text-lg font-bold text-primary mb-2">
           {formatPrice(price)}
         </p>
-        <div className="mt-auto flex items-center gap-1 text-xs text-muted-foreground">
-          <MapPin className="h-3 w-3 shrink-0" />
+        <div className="mt-auto pt-2 space-y-1.5 text-xs">
           {distanceKm != null ? (
-            <span>
-              {distanceKm < 0.5
-                ? "On Your Campus"
-                : `${distanceKm.toFixed(1)} km away`}
-              {" · "}
-              {pickupSpot}
-            </span>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {distanceKm < 0.5 ? (
+                <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/15 px-2 py-0.5 font-bold text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 text-[11px]">
+                  <MapPin className="h-3 w-3 shrink-0" />
+                  On Your Campus
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-0.5 font-bold text-primary border border-primary/20 text-[11px]">
+                  <MapPin className="h-3 w-3 shrink-0" />
+                  {distanceKm.toFixed(1)} km away ({campusName})
+                </span>
+              )}
+              <span className="text-muted-foreground truncate">· {pickupSpot}</span>
+            </div>
           ) : (
-            <span>
-              {campusName} · {pickupSpot}
-            </span>
+            <div className="flex items-center gap-1 text-muted-foreground truncate">
+              <MapPin className="h-3 w-3 shrink-0" />
+              <span className="truncate">{campusName} · {pickupSpot}</span>
+            </div>
           )}
         </div>
       </div>

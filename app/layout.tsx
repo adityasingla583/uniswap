@@ -23,12 +23,23 @@ export default async function RootLayout({
     getSession().catch(() => null),
   ]);
 
-  let user: { id: string; name: string } | null = null;
+  let user: {
+    id: string;
+    name: string;
+    campusId: string;
+    campus: { id: string; name: string };
+  } | null = null;
+
   if (session?.userId) {
     try {
       user = await prisma.user.findUnique({
         where: { id: session.userId },
-        select: { id: true, name: true },
+        select: {
+          id: true,
+          name: true,
+          campusId: true,
+          campus: { select: { id: true, name: true } },
+        },
       });
     } catch {
       user = null;

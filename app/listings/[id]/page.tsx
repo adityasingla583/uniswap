@@ -26,14 +26,20 @@ export default async function ListingDetailPage({ params }: PageProps) {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      {/* Back button */}
-      <div>
+      {/* Navigation buttons */}
+      <div className="flex items-center justify-between">
         <Link
           href="/"
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to Listings
+        </Link>
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-primary hover:bg-primary/10 transition-colors border border-primary/20"
+        >
+          <span>Home</span>
         </Link>
       </div>
 

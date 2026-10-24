@@ -13,6 +13,12 @@ enum Category {
   CLOTHING
   FREE
   OTHER
+  CYCLES_VEHICLES
+  DORM_FURNITURE
+  APPLIANCES
+  SPORTS_FITNESS
+  STATIONERY_LAB
+  SERVICES_TICKETS
 }
 
 enum ListingStatus {
@@ -32,24 +38,28 @@ model Campus {
 }
 
 model User {
-  id         String     @id @default(cuid())
-  name       String
-  email      String     @unique
-  password   String
-  campusId   String
-  campus     Campus     @relation(fields: [campusId], references: [id])
-  dormZone   String?
-  createdAt  DateTime   @default(now())
+  id            String     @id @default(cuid())
+  name          String
+  email         String     @unique
+  password      String
+  emailVerified Boolean    @default(false)
+  campusId      String
+  campus        Campus     @relation(fields: [campusId], references: [id], onDelete: Cascade)
+  dormZone      String?
+  createdAt     DateTime   @default(now())
 
-  listings   Listing[]
-  favorites  Favorite[]
+  listings            Listing[]
+  favorites           Favorite[]
+  buyerConversations  Conversation[] @relation("BuyerConversations")
+  sellerConversations Conversation[] @relation("SellerConversations")
+  sentMessages        Message[]
 }
 
 model Listing {
   id          String        @id @default(cuid())
   title       String
   description String
-  price       Float
+  price       Float         // 0.0 indicates Free
   category    Category
   status      ListingStatus @default(AVAILABLE)
   imageUrl    String
@@ -63,9 +73,10 @@ model Listing {
   userId      String
   user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  favorites   Favorite[]
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  favorites     Favorite[]
+  conversations Conversation[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
   @@index([campusId, createdAt])
   @@index([category])
@@ -81,4 +92,49 @@ model Favorite {
   listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
 
   @@unique([userId, listingId])
+}
+
+model OtpToken {
+  id        String   @id @default(cuid())
+  email     String
+  code      String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}
+
+model Conversation {
+  id        String    @id @default(cuid())
+  listingId String?
+  listing   Listing?  @relation(fields: [listingId], references: [id], onDelete: SetNull)
+
+  buyerId   String
+  buyer     User      @relation("BuyerConversations", fields: [buyerId], references: [id], onDelete: Cascade)
+
+  sellerId  String
+  seller    User      @relation("SellerConversations", fields: [sellerId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  messages  Message[]
+
+  @@unique([buyerId, sellerId, listingId])
+  @@index([buyerId])
+  @@index([sellerId])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  senderId       String
+  sender         User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  content        String
+  read           Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
 }

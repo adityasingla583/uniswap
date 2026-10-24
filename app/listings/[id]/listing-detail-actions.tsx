@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useOptimistic, useTransition } from "react";
-import { Heart, Mail, Share2, Check, MessageSquare } from "lucide-react";
+import { Heart, Mail, Share2, Check, MessageCircle, Loader2 } from "lucide-react";
 import { toggleFavorite } from "@/server/actions";
+import { startChatWithSeller } from "@/server/chat-actions";
 import { cn } from "@/lib/utils";
 
 export function ListingDetailActions({
@@ -24,17 +25,29 @@ export function ListingDetailActions({
 }) {
   const [optimisticFav, setOptimisticFav] = useOptimistic(initialFavorited);
   const [isPending, startTransition] = useTransition();
+  const [isStartingChat, setIsStartingChat] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showContactModal, setShowContactModal] = useState(false);
 
   function handleFavorite() {
     if (!isLoggedIn) {
-      window.location.href = "/login";
+      window.location.href = `/login?from=/listings/${listingId}`;
       return;
     }
     startTransition(async () => {
       setOptimisticFav(!optimisticFav);
       await toggleFavorite(listingId);
+    });
+  }
+
+  function handleStartChat() {
+    if (!isLoggedIn) {
+      window.location.href = `/login?from=/listings/${listingId}`;
+      return;
+    }
+    setIsStartingChat(true);
+    startTransition(async () => {
+      await startChatWithSeller(listingId);
     });
   }
 
@@ -53,14 +66,24 @@ export function ListingDetailActions({
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3">
-        {/* Contact Button */}
+        {/* Direct WhatsApp Style Chat Button */}
         {!isOwner ? (
           <button
-            onClick={() => setShowContactModal(true)}
-            className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 px-6 font-semibold text-white hover:bg-primary-hover shadow-sm transition-all"
+            onClick={handleStartChat}
+            disabled={isStartingChat}
+            className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3.5 px-6 font-semibold text-white hover:bg-emerald-700 shadow-sm transition-all disabled:opacity-60"
           >
-            <MessageSquare className="h-5 w-5" />
-            Contact Seller
+            {isStartingChat ? (
+              <>
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Connecting Chat...
+              </>
+            ) : (
+              <>
+                <MessageCircle className="h-5 w-5 fill-current" />
+                Chat with Seller
+              </>
+            )}
           </button>
         ) : (
           <a
@@ -69,6 +92,17 @@ export function ListingDetailActions({
           >
             Manage Your Listing
           </a>
+        )}
+
+        {/* Alternate Email Button */}
+        {!isOwner && (
+          <button
+            onClick={() => setShowContactModal(true)}
+            className="p-3.5 rounded-xl border border-border bg-surface hover:bg-muted text-muted-foreground transition-all flex items-center justify-center"
+            title="Email Seller"
+          >
+            <Mail className="h-5 w-5" />
+          </button>
         )}
 
         {/* Favorite Button */}
@@ -81,7 +115,7 @@ export function ListingDetailActions({
               ? "bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400"
               : "border-border bg-surface hover:bg-muted text-muted-foreground"
           )}
-          title={optimisticFav ? "Remove from favorites" : "Save to favorites"}
+          title={optimisticFav ? "Remove from saved" : "Save to wishlist"}
         >
           <Heart className={cn("h-5 w-5", optimisticFav && "fill-current")} />
         </button>
@@ -102,13 +136,13 @@ export function ListingDetailActions({
         </p>
       )}
 
-      {/* Contact Seller Modal */}
+      {/* Alternative Email Modal */}
       {showContactModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl space-y-4">
-            <h3 className="text-lg font-bold text-foreground">Contact {sellerName}</h3>
+            <h3 className="text-lg font-bold text-foreground">Email {sellerName}</h3>
             <p className="text-sm text-muted-foreground">
-              Send an email to arrange a time and verify the pickup spot.
+              Send an email directly from your mail client.
             </p>
 
             <div className="rounded-xl border border-border bg-surface p-4 space-y-2 text-sm">

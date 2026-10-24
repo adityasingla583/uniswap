@@ -8,335 +8,408 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
+const INDIAN_CAMPUSES = [
+  // IITs
+  { name: "IIT Bombay (Mumbai)", latitude: 19.1334, longitude: 72.9133, domain: "iitb.ac.in" },
+  { name: "IIT Delhi (New Delhi)", latitude: 28.5450, longitude: 77.1926, domain: "iitd.ac.in" },
+  { name: "IIT Madras (Chennai)", latitude: 12.9915, longitude: 80.2337, domain: "iitm.ac.in" },
+  { name: "IIT Kanpur (Kanpur)", latitude: 26.5123, longitude: 80.2329, domain: "iitk.ac.in" },
+  { name: "IIT Kharagpur (Kharagpur)", latitude: 22.3149, longitude: 87.3105, domain: "iitkgp.ac.in" },
+  { name: "IIT Roorkee (Roorkee)", latitude: 29.8649, longitude: 77.8965, domain: "iitr.ac.in" },
+  { name: "IIT Guwahati (Guwahati)", latitude: 26.1878, longitude: 91.6916, domain: "iitg.ac.in" },
+  { name: "IIT BHU (Varanasi)", latitude: 25.2677, longitude: 82.9913, domain: "itbhu.ac.in" },
+  { name: "IIT Hyderabad (Kandi)", latitude: 17.5947, longitude: 78.1230, domain: "iith.ac.in" },
+  { name: "IIT Indore (Simrol)", latitude: 22.5204, longitude: 75.9207, domain: "iiti.ac.in" },
+  { name: "IIT Gandhinagar (Palaj)", latitude: 23.2114, longitude: 72.6842, domain: "iitgn.ac.in" },
+  { name: "IIT Ropar (Rupnagar)", latitude: 30.9678, longitude: 76.4732, domain: "iitrpr.ac.in" },
+
+  // IISc & BITS
+  { name: "IISc Bangalore (Bengaluru)", latitude: 13.0219, longitude: 77.5671, domain: "iisc.ac.in" },
+  { name: "BITS Pilani (Pilani Campus)", latitude: 28.3639, longitude: 75.5870, domain: "pilani.bits-pilani.ac.in" },
+  { name: "BITS Pilani (Goa Campus)", latitude: 15.3911, longitude: 73.8783, domain: "goa.bits-pilani.ac.in" },
+  { name: "BITS Pilani (Hyderabad Campus)", latitude: 17.5449, longitude: 78.5718, domain: "hyderabad.bits-pilani.ac.in" },
+
+  // NITs
+  { name: "NIT Trichy (Tiruchirappalli)", latitude: 10.7589, longitude: 78.8132, domain: "nitt.edu" },
+  { name: "NIT Surathkal (Mangalore)", latitude: 13.0108, longitude: 74.7943, domain: "nitk.edu.in" },
+  { name: "NIT Warangal (Warangal)", latitude: 17.9835, longitude: 79.5308, domain: "nitw.ac.in" },
+  { name: "NIT Rourkela (Rourkela)", latitude: 22.2531, longitude: 84.9011, domain: "nitrkl.ac.in" },
+  { name: "NIT Calicut (Kozhikode)", latitude: 11.3216, longitude: 75.9336, domain: "nitc.ac.in" },
+  { name: "VNIT Nagpur (Nagpur)", latitude: 21.1234, longitude: 79.0514, domain: "vnit.ac.in" },
+  { name: "MNIT Jaipur (Jaipur)", latitude: 26.8637, longitude: 75.8115, domain: "mnit.ac.in" },
+  { name: "MNNIT Allahabad (Prayagraj)", latitude: 25.4921, longitude: 81.8667, domain: "mnnit.ac.in" },
+
+  // IIMs
+  { name: "IIM Ahmedabad (Ahmedabad)", latitude: 23.0315, longitude: 72.5314, domain: "iima.ac.in" },
+  { name: "IIM Bangalore (Bengaluru)", latitude: 12.8953, longitude: 77.5996, domain: "iimb.ac.in" },
+  { name: "IIM Calcutta (Kolkata)", latitude: 22.4384, longitude: 88.3075, domain: "iimcal.ac.in" },
+  { name: "IIM Lucknow (Lucknow)", latitude: 26.9248, longitude: 80.9329, domain: "iiml.ac.in" },
+  { name: "IIM Kozhikode (Kozhikode)", latitude: 11.2858, longitude: 75.8770, domain: "iimk.ac.in" },
+  { name: "IIM Indore (Indore)", latitude: 22.6517, longitude: 75.7876, domain: "iimidr.ac.in" },
+
+  // Medical
+  { name: "AIIMS New Delhi (New Delhi)", latitude: 28.5672, longitude: 77.2100, domain: "aiims.edu" },
+  { name: "AIIMS Rishikesh (Rishikesh)", latitude: 30.0763, longitude: 78.2878, domain: "aiimsrishikesh.edu.in" },
+  { name: "AIIMS Jodhpur (Jodhpur)", latitude: 26.2427, longitude: 73.0076, domain: "aiimsjodhpur.edu.in" },
+  { name: "JIPMER (Puducherry)", latitude: 11.9546, longitude: 79.8115, domain: "jipmer.edu.in" },
+
+  // Premier Universities
+  { name: "Delhi University - North Campus", latitude: 28.6904, longitude: 77.2120, domain: "du.ac.in" },
+  { name: "Delhi University - South Campus", latitude: 28.5847, longitude: 77.1641, domain: "south.du.ac.in" },
+  { name: "JNU - Jawaharlal Nehru University (Delhi)", latitude: 28.5401, longitude: 77.1664, domain: "jnu.ac.in" },
+  { name: "DTU - Delhi Technological University", latitude: 28.7501, longitude: 77.1177, domain: "dtu.ac.in" },
+  { name: "NSUT - Netaji Subhas University of Technology", latitude: 28.6092, longitude: 77.0372, domain: "nsut.ac.in" },
+  { name: "IIIT Hyderabad (Gachibowli)", latitude: 17.4451, longitude: 78.3489, domain: "iiit.ac.in" },
+  { name: "IIIT Bangalore (Electronic City)", latitude: 12.8440, longitude: 77.6633, domain: "iiitb.ac.in" },
+  { name: "IIIT Delhi (Okhla)", latitude: 28.5459, longitude: 77.2732, domain: "iiitd.ac.in" },
+  { name: "VIT - Vellore Institute of Technology", latitude: 12.9692, longitude: 79.1559, domain: "vit.ac.in" },
+  { name: "Manipal Institute of Technology (MAHE)", latitude: 13.3525, longitude: 74.7928, domain: "manipal.edu" },
+  { name: "Anna University (Chennai)", latitude: 13.0109, longitude: 80.2354, domain: "annauniv.edu" },
+  { name: "Jadavpur University (Kolkata)", latitude: 22.4988, longitude: 88.3715, domain: "jadavpuruniversity.in" },
+  { name: "COEP Technological University (Pune)", latitude: 18.5298, longitude: 73.8565, domain: "coep.org.in" },
+  { name: "Ashoka University (Sonipat)", latitude: 28.9482, longitude: 77.1009, domain: "ashoka.edu.in" },
+  { name: "Thapar Institute of Engg (Patiala)", latitude: 30.3539, longitude: 76.3639, domain: "thapar.edu" },
+  { name: "Christ University (Bengaluru)", latitude: 12.9344, longitude: 77.6060, domain: "christuniversity.in" },
+  { name: "SRM University (Chennai)", latitude: 12.8230, longitude: 80.0450, domain: "srmist.edu.in" },
+  { name: "Jamia Millia Islamia (New Delhi)", latitude: 28.5616, longitude: 77.2802, domain: "jmi.ac.in" },
+  { name: "Panjab University (Chandigarh)", latitude: 30.7599, longitude: 76.7684, domain: "puchd.ac.in" },
+];
+
 async function main() {
+  console.log("🌱 Starting seed script for Indian campuses & localized items...");
+
   // Clean existing data
   await prisma.favorite.deleteMany();
   await prisma.listing.deleteMany();
   await prisma.user.deleteMany();
   await prisma.campus.deleteMany();
 
-  // Create campuses
-  const mit = await prisma.campus.create({
-    data: {
-      name: "MIT Cambridge",
-      latitude: 42.3601,
-      longitude: -71.0942,
-      domain: "mit.edu",
-    },
-  });
+  // Create Indian Campuses
+  const createdCampuses = new Map<string, any>();
+  for (const c of INDIAN_CAMPUSES) {
+    const record = await prisma.campus.create({ data: c });
+    createdCampuses.set(c.name, record);
+  }
 
-  const harvard = await prisma.campus.create({
-    data: {
-      name: "Harvard University",
-      latitude: 42.3770,
-      longitude: -71.1167,
-      domain: "harvard.edu",
-    },
-  });
+  const iitb = createdCampuses.get("IIT Bombay (Mumbai)");
+  const iitd = createdCampuses.get("IIT Delhi (New Delhi)");
+  const iitm = createdCampuses.get("IIT Madras (Chennai)");
+  const duNorth = createdCampuses.get("Delhi University - North Campus");
 
-  // Create users
+  // Create test users
   const hashedPassword = await hash("password123", 12);
 
-  const alice = await prisma.user.create({
+  const aarav = await prisma.user.create({
     data: {
-      name: "Alice Chen",
-      email: "alice@mit.edu",
+      name: "Aarav Sharma",
+      email: "aarav@iitb.ac.in",
       password: hashedPassword,
-      campusId: mit.id,
-      dormZone: "East Campus",
+      campusId: iitb.id,
+      dormZone: "Hostel 14 (H14)",
     },
   });
 
-  const bob = await prisma.user.create({
+  const priya = await prisma.user.create({
     data: {
-      name: "Bob Smith",
-      email: "bob@harvard.edu",
+      name: "Priya Verma",
+      email: "priya@iitd.ac.in",
       password: hashedPassword,
-      campusId: harvard.id,
-      dormZone: "Adams House",
+      campusId: iitd.id,
+      dormZone: "Kailash Hostel",
     },
   });
 
-  const charlie = await prisma.user.create({
+  const rohit = await prisma.user.create({
     data: {
-      name: "Charlie Park",
-      email: "charlie@mit.edu",
+      name: "Rohit Iyer",
+      email: "rohit@iitm.ac.in",
       password: hashedPassword,
-      campusId: mit.id,
-      dormZone: "Next House",
+      campusId: iitm.id,
+      dormZone: "Alakananda Hostel",
     },
   });
 
-  const diana = await prisma.user.create({
+  const ananya = await prisma.user.create({
     data: {
-      name: "Diana Lee",
-      email: "diana@harvard.edu",
+      name: "Ananya Kapoor",
+      email: "ananya@du.ac.in",
       password: hashedPassword,
-      campusId: harvard.id,
-      dormZone: "Dunster House",
+      campusId: duNorth.id,
+      dormZone: "Miranda House PG",
     },
   });
 
-  // MIT Listings
-  const mitListings = [
+  // Listings covering all categories with Indian Rupees (₹)
+  const sampleListings = [
+    // Cycles & Vehicles
     {
-      title: "Calculus Early Transcendentals 8th Ed",
-      description: "Stewart calculus textbook, lightly highlighted. Perfect for 18.01/18.02. Some notes in margins but all pages intact.",
-      price: 45.0,
+      title: "Hero Sprint Pro 21-Speed Gear Bicycle",
+      description: "Great condition geared cycle. Dual disc brakes, new front tyre, comfortable gel seat. Perfect for commuting between hostels and lecture hall complex. Lock included free.",
+      price: 3499.0,
+      category: "CYCLES_VEHICLES" as const,
+      imageUrl: "https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=600",
+      pickupSpot: "Hostel 14 Cycle Stand / SAC",
+      latitude: 19.1334,
+      longitude: 72.9133,
+      campusId: iitb.id,
+      userId: aarav.id,
+    },
+    {
+      title: "Steelbird Full-Face Helmet (Medium)",
+      description: "ISI certified helmet, quick release buckle, smoke visor. Used for 4 months, pristine interior padding. Selling because graduating.",
+      price: 799.0,
+      category: "CYCLES_VEHICLES" as const,
+      imageUrl: "https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=600",
+      pickupSpot: "Main Gate Security Post",
+      latitude: 28.5450,
+      longitude: 77.1926,
+      campusId: iitd.id,
+      userId: priya.id,
+    },
+
+    // Books & Study Material
+    {
+      title: "Concepts of Physics by HC Verma (Vol 1 & 2)",
+      description: "Must-have classic physics reference. Crisp pages, no pen scribble, formula cheat sheets included. Both volumes bundled together.",
+      price: 450.0,
       category: "BOOKS" as const,
-      imageUrl: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400",
-      pickupSpot: "Hayden Library",
-      latitude: 42.3592,
-      longitude: -71.0927,
-      campusId: mit.id,
-      userId: alice.id,
+      imageUrl: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600",
+      pickupSpot: "Central Library Steps",
+      latitude: 19.1340,
+      longitude: 72.9140,
+      campusId: iitb.id,
+      userId: aarav.id,
     },
     {
-      title: "Desk Lamp - LED Adjustable",
-      description: "Great desk lamp for late-night study sessions. USB charging port built in. Barely used for one semester.",
-      price: 15.0,
-      category: "ELECTRONICS" as const,
-      imageUrl: "https://images.unsplash.com/photo-1507473885765-e6ed057ab6fe?w=400",
-      pickupSpot: "Student Center",
-      latitude: 42.3598,
-      longitude: -71.0951,
-      campusId: mit.id,
-      userId: alice.id,
-    },
-    {
-      title: "Mini Fridge - Compact 3.2 Cu Ft",
-      description: "Perfect dorm fridge. Works great, very clean. Moving out and can't take it with me. Pick up anytime.",
-      price: 60.0,
-      category: "FURNITURE" as const,
-      imageUrl: "https://images.unsplash.com/photo-1571175443880-49e1d25b2bc5?w=400",
-      pickupSpot: "East Campus Courtyard",
-      latitude: 42.3604,
-      longitude: -71.0893,
-      campusId: mit.id,
-      userId: charlie.id,
-    },
-    {
-      title: "Introduction to Algorithms (CLRS)",
-      description: "The classic CLRS algorithms textbook, 4th edition. Essential for 6.006. No markings, like new condition.",
-      price: 55.0,
+      title: "Introduction to Algorithms (CLRS) - Indian Edition",
+      description: "The definitive algorithms textbook. Very clean copy with minimal pencil notes in Chapter 4 & 15. Saved me during placements!",
+      price: 850.0,
       category: "BOOKS" as const,
-      imageUrl: "https://images.unsplash.com/photo-1532012197267-da84d127e765?w=400",
-      pickupSpot: "Stata Center Lobby",
-      latitude: 42.3616,
-      longitude: -71.0906,
-      campusId: mit.id,
-      userId: charlie.id,
+      imageUrl: "https://images.unsplash.com/photo-1532012197267-da84d127e765?w=600",
+      pickupSpot: "Bharti Building Lobby",
+      latitude: 28.5455,
+      longitude: 77.1930,
+      campusId: iitd.id,
+      userId: priya.id,
     },
     {
-      title: "MIT Hoodie - Size M (Free!)",
-      description: "Giving away an MIT hoodie, size Medium. Has a small stain on the sleeve but still wearable. Free to a good home!",
-      price: 0.0,
-      category: "FREE" as const,
-      imageUrl: "https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=400",
-      pickupSpot: "Main Gate",
-      latitude: 42.3601,
-      longitude: -71.0942,
-      campusId: mit.id,
-      userId: alice.id,
+      title: "Higher Engineering Mathematics by B.S. Grewal",
+      description: "Standard math text for 1st & 2nd year engineering. 44th Edition in hardcover. All formulas highlighted neatly.",
+      price: 499.0,
+      category: "BOOKS" as const,
+      imageUrl: "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=600",
+      pickupSpot: "DoMS Library / Gajendra Circle",
+      latitude: 12.9915,
+      longitude: 80.2337,
+      campusId: iitm.id,
+      userId: rohit.id,
     },
+
+    // Electronics & Gadgets
     {
-      title: "TI-84 Plus CE Graphing Calculator",
-      description: "TI-84 Plus CE in great condition with charging cable. All functions work perfectly. Great for math and physics courses.",
-      price: 70.0,
+      title: "Casio fx-991EX ClassWiz Scientific Calculator",
+      description: "Allowed in university examinations. High resolution display, 552 functions including matrix and vector calculations. Comes with original protective slide case.",
+      price: 850.0,
       category: "ELECTRONICS" as const,
-      imageUrl: "https://images.unsplash.com/photo-1564466809058-bf4114d55352?w=400",
-      pickupSpot: "Building 10 Lobby",
-      latitude: 42.3593,
-      longitude: -71.0935,
-      campusId: mit.id,
-      userId: charlie.id,
+      imageUrl: "https://images.unsplash.com/photo-1564466809058-bf4114d55352?w=600",
+      pickupSpot: "Gymkhana Grounds",
+      latitude: 19.1330,
+      longitude: 72.9125,
+      campusId: iitb.id,
+      userId: aarav.id,
     },
     {
-      title: "Ergonomic Desk Chair",
-      description: "Adjustable height desk chair with lumbar support. Used for 2 semesters. Some wear on armrests but very comfortable.",
-      price: 40.0,
-      category: "FURNITURE" as const,
-      imageUrl: "https://images.unsplash.com/photo-1592078615290-033ee584e267?w=400",
-      pickupSpot: "Next House Loading Dock",
-      latitude: 42.3546,
-      longitude: -71.1024,
-      campusId: mit.id,
-      userId: charlie.id,
-    },
-    {
-      title: "Physics Lecture Notes Bundle (Free)",
-      description: "Complete set of 8.01 and 8.02 lecture notes, neatly organized. Free for any physics student who wants them!",
-      price: 0.0,
-      category: "FREE" as const,
-      imageUrl: "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=400",
-      pickupSpot: "Campus Library",
-      latitude: 42.3592,
-      longitude: -71.0927,
-      campusId: mit.id,
-      userId: alice.id,
-    },
-    {
-      title: "Bluetooth Speaker - JBL Flip 5",
-      description: "Portable bluetooth speaker, great sound quality. Battery lasts about 8 hours. Minor scratches on bottom.",
-      price: 35.0,
+      title: "boAt Rockerz 450 Bluetooth Headphones",
+      description: "Lush bass, 15 hours battery life on single charge, ultra-plush ear cups. In matte black with charging cable and aux cable.",
+      price: 699.0,
       category: "ELECTRONICS" as const,
-      imageUrl: "https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=400",
-      pickupSpot: "Student Center",
-      latitude: 42.3598,
-      longitude: -71.0951,
-      campusId: mit.id,
-      userId: charlie.id,
+      imageUrl: "https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?w=600",
+      pickupSpot: "Vindhyachal Hostel Canteen",
+      latitude: 28.5445,
+      longitude: 77.1920,
+      campusId: iitd.id,
+      userId: priya.id,
     },
     {
-      title: "Winter Jacket - North Face Size L",
-      description: "North Face winter jacket, men's size Large. Very warm, perfect for Boston winters. Selling because I got a new one.",
-      price: 50.0,
+      title: "Mi 20000mAh Power Bank 3i (18W Fast Charging)",
+      description: "Triple port output with Power Delivery. Charges a laptop or phone easily during long library study marathons. 100% genuine.",
+      price: 950.0,
+      category: "ELECTRONICS" as const,
+      imageUrl: "https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=600",
+      pickupSpot: "Arts Faculty Gate No. 4",
+      latitude: 28.6904,
+      longitude: 77.2120,
+      campusId: duNorth.id,
+      userId: ananya.id,
+    },
+
+    // Dorm Furniture
+    {
+      title: "Wakefit 4-Inch High Resilient Foam Single Mattress",
+      description: "Single bed dorm mattress (72x36 inches). Removable washable cover, sanitized regularly, very supportive for the back. No sags.",
+      price: 1800.0,
+      category: "DORM_FURNITURE" as const,
+      imageUrl: "https://images.unsplash.com/photo-1592078615290-033ee584e267?w=600",
+      pickupSpot: "Hostel 14 Wing A",
+      latitude: 19.1334,
+      longitude: 72.9133,
+      campusId: iitb.id,
+      userId: aarav.id,
+    },
+    {
+      title: "Foldable Wooden Laptop Table for Bed",
+      description: "Includes tablet holder, cup slot, and drawer. Lightweight, easily stored under the cot. Ideal for late-night hostel binge or assignments.",
+      price: 350.0,
+      category: "DORM_FURNITURE" as const,
+      imageUrl: "https://images.unsplash.com/photo-1532372576444-dda954194ad0?w=600",
+      pickupSpot: "Kailash Gate",
+      latitude: 28.5450,
+      longitude: 77.1926,
+      campusId: iitd.id,
+      userId: priya.id,
+    },
+
+    // Appliances
+    {
+      title: "Pigeon 1.5 Litre Electric Kettle (1500W)",
+      description: "Hostel lifesaver for Maggi, coffee, and late night green tea. Automatic shutoff with stainless steel body. Works like a charm.",
+      price: 499.0,
+      category: "APPLIANCES" as const,
+      imageUrl: "https://images.unsplash.com/photo-1571175443880-49e1d25b2bc5?w=600",
+      pickupSpot: "Himalaya Mess / Canteen",
+      latitude: 12.9920,
+      longitude: 80.2340,
+      campusId: iitm.id,
+      userId: rohit.id,
+    },
+    {
+      title: "Bajaj 300mm High-Speed Table Fan",
+      description: "Powerful air delivery with silent operation. Kept my room cool through Delhi summer. Cleaned and oiled last week.",
+      price: 850.0,
+      category: "APPLIANCES" as const,
+      imageUrl: "https://images.unsplash.com/photo-1507473885765-e6ed057ab6fe?w=600",
+      pickupSpot: "Miranda House Gate",
+      latitude: 28.6910,
+      longitude: 77.2115,
+      campusId: duNorth.id,
+      userId: ananya.id,
+    },
+
+    // Clothing & Lab Apparel
+    {
+      title: "White Cotton Chemistry Lab Coat (Unisex M)",
+      description: "Full sleeve 100% thick white cotton lab coat with deep pockets. Required for Chemistry & Bio lab courses. Freshly dry-cleaned.",
+      price: 199.0,
       category: "CLOTHING" as const,
-      imageUrl: "https://images.unsplash.com/photo-1544923246-77307dd270b9?w=400",
-      pickupSpot: "Main Gate",
-      latitude: 42.3601,
-      longitude: -71.0942,
-      campusId: mit.id,
-      userId: alice.id,
+      imageUrl: "https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=600",
+      pickupSpot: "Department of Chemistry Foyer",
+      latitude: 19.1338,
+      longitude: 72.9130,
+      campusId: iitb.id,
+      userId: aarav.id,
+    },
+    {
+      title: "IIT Delhi Technical Fest T-Shirt & Hoodie (L)",
+      description: "Rendezvous / Tryst official black hoodie, size Large. High density fleece, very warm for North Indian campus winters.",
+      price: 550.0,
+      category: "CLOTHING" as const,
+      imageUrl: "https://images.unsplash.com/photo-1544923246-77307dd270b9?w=600",
+      pickupSpot: "Student Activity Center (SAC)",
+      latitude: 28.5448,
+      longitude: 77.1922,
+      campusId: iitd.id,
+      userId: priya.id,
+    },
+
+    // Sports & Fitness
+    {
+      title: "Yonex Nanoray 7000I Badminton Racket + Full Cover",
+      description: "Graphite shaft, high tension gutting (24 lbs). Lightweight and lethal for smashes in hostel court. Minor rim scratches only.",
+      price: 899.0,
+      category: "SPORTS_FITNESS" as const,
+      imageUrl: "https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?w=600",
+      pickupSpot: "Indoor Badminton Court",
+      latitude: 12.9910,
+      longitude: 80.2330,
+      campusId: iitm.id,
+      userId: rohit.id,
+    },
+    {
+      title: "Nivia Storm Size-5 Football (FIFA Spec)",
+      description: "32 panel machine stitched rubberized ball. Excellent bounce on turf and grass. Used only 3 times during inter-hostel tournament.",
+      price: 399.0,
+      category: "SPORTS_FITNESS" as const,
+      imageUrl: "https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?w=600",
+      pickupSpot: "Rugby Grounds / Main Field",
+      latitude: 28.5460,
+      longitude: 77.1935,
+      campusId: iitd.id,
+      userId: priya.id,
+    },
+
+    // Stationery & Lab Tools
+    {
+      title: "Omega Engineering Mini Drafter with Storage Bag",
+      description: "Essential for 1st Year Engineering Graphics / Drawing. Steel arms, unbreakable scale, clamps securely on drawing boards.",
+      price: 299.0,
+      category: "STATIONERY_LAB" as const,
+      imageUrl: "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=600",
+      pickupSpot: "Drawing Hall / Central Workshop",
+      latitude: 19.1335,
+      longitude: 72.9128,
+      campusId: iitb.id,
+      userId: aarav.id,
+    },
+
+    // Services & Tickets
+    {
+      title: "Shared Airport Cab to Mumbai T2 (Friday 6 AM)",
+      description: "Booked a Prime Sedan from Powai campus to Mumbai T2 for Diwali break. Looking for 2 students to share fare (₹250 each).",
+      price: 250.0,
+      category: "SERVICES_TICKETS" as const,
+      imageUrl: "https://images.unsplash.com/photo-1520903920243-00d872a2d1c9?w=600",
+      pickupSpot: "Main Gate Security",
+      latitude: 19.1334,
+      longitude: 72.9133,
+      campusId: iitb.id,
+      userId: aarav.id,
+    },
+
+    // Free Giveaways (₹0)
+    {
+      title: "GATE CSE 15 Years Solved Papers Booklet (Free!)",
+      description: "Made Easy chapterwise solved papers with mock test keys. Passing on to any 3rd/4th year student preparing for GATE. Take it for free!",
+      price: 0.0,
+      category: "FREE" as const,
+      imageUrl: "https://images.unsplash.com/photo-1553729459-afe8f2e2ed65?w=600",
+      pickupSpot: "Library Quadrangle",
+      latitude: 28.5450,
+      longitude: 77.1926,
+      campusId: iitd.id,
+      userId: priya.id,
+    },
+    {
+      title: "Dorm Curtains & Warm LED Fairy Lights (Free!)",
+      description: "Pair of 7-foot thick navy blue curtains with ring eyelets, plus 10 meters warm yellow fairy lights. Free for incoming fresher!",
+      price: 0.0,
+      category: "FREE" as const,
+      imageUrl: "https://images.unsplash.com/photo-1600166898405-da9535204843?w=600",
+      pickupSpot: "Miranda House Reception",
+      latitude: 28.6904,
+      longitude: 77.2120,
+      campusId: duNorth.id,
+      userId: ananya.id,
     },
   ];
 
-  // Harvard Listings
-  const harvardListings = [
-    {
-      title: "Organic Chemistry Textbook",
-      description: "Clayden Organic Chemistry, 2nd edition. Some highlighting but in great shape. Essential for Chem 27.",
-      price: 40.0,
-      category: "BOOKS" as const,
-      imageUrl: "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=400",
-      pickupSpot: "Widener Library",
-      latitude: 42.3737,
-      longitude: -71.1165,
-      campusId: harvard.id,
-      userId: bob.id,
-    },
-    {
-      title: "Standing Desk Converter",
-      description: "Adjustable standing desk converter that sits on top of any desk. Great for ergonomic studying. Height adjustable.",
-      price: 85.0,
-      category: "FURNITURE" as const,
-      imageUrl: "https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?w=400",
-      pickupSpot: "Science Center",
-      latitude: 42.3765,
-      longitude: -71.1163,
-      campusId: harvard.id,
-      userId: bob.id,
-    },
-    {
-      title: "MacBook Charger 67W USB-C",
-      description: "Original Apple 67W USB-C charger. Works perfectly, just upgraded to a newer MacBook that uses different wattage.",
-      price: 25.0,
-      category: "ELECTRONICS" as const,
-      imageUrl: "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=400",
-      pickupSpot: "Adams House",
-      latitude: 42.3725,
-      longitude: -71.1189,
-      campusId: harvard.id,
-      userId: diana.id,
-    },
-    {
-      title: "Harvard Crimson Scarf (Free)",
-      description: "Official Harvard crimson scarf from the campus store. Giving it away - already have too many! Great condition.",
-      price: 0.0,
-      category: "FREE" as const,
-      imageUrl: "https://images.unsplash.com/photo-1520903920243-00d872a2d1c9?w=400",
-      pickupSpot: "Harvard Yard",
-      latitude: 42.3744,
-      longitude: -71.1169,
-      campusId: harvard.id,
-      userId: bob.id,
-    },
-    {
-      title: "Microeconomics: Theory and Applications",
-      description: "Perloff microeconomics textbook, latest edition. Clean copy, no highlights. Used for Econ 1010a.",
-      price: 35.0,
-      category: "BOOKS" as const,
-      imageUrl: "https://images.unsplash.com/photo-1553729459-afe8f2e2ed65?w=400",
-      pickupSpot: "Lamont Library",
-      latitude: 42.3727,
-      longitude: -71.1153,
-      campusId: harvard.id,
-      userId: diana.id,
-    },
-    {
-      title: "Dorm Rug 5x7 - Navy Blue",
-      description: "Soft area rug, 5x7 feet, navy blue. Perfect for dorm rooms. Very clean, no stains. Rolled up and ready to go.",
-      price: 20.0,
-      category: "FURNITURE" as const,
-      imageUrl: "https://images.unsplash.com/photo-1600166898405-da9535204843?w=400",
-      pickupSpot: "Dunster House",
-      latitude: 42.3691,
-      longitude: -71.1188,
-      campusId: harvard.id,
-      userId: diana.id,
-    },
-    {
-      title: "Sony WH-1000XM4 Headphones",
-      description: "Sony noise-canceling headphones in excellent condition. Includes original case and all cables. Battery holds 25+ hours.",
-      price: 120.0,
-      category: "ELECTRONICS" as const,
-      imageUrl: "https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?w=400",
-      pickupSpot: "Science Center",
-      latitude: 42.3765,
-      longitude: -71.1163,
-      campusId: harvard.id,
-      userId: bob.id,
-    },
-    {
-      title: "Rain Boots Size 8 (Free)",
-      description: "Women's rain boots, size 8. A bit scuffed but fully waterproof. Free - just need them gone before move-out!",
-      price: 0.0,
-      category: "FREE" as const,
-      imageUrl: "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=400",
-      pickupSpot: "Harvard Square",
-      latitude: 42.3735,
-      longitude: -71.1189,
-      campusId: harvard.id,
-      userId: diana.id,
-    },
-    {
-      title: "Bedside Table with Drawer",
-      description: "Small wooden bedside table with one drawer. Solid construction. Minor scratches on top. Easy to carry.",
-      price: 25.0,
-      category: "FURNITURE" as const,
-      imageUrl: "https://images.unsplash.com/photo-1532372576444-dda954194ad0?w=400",
-      pickupSpot: "Adams House",
-      latitude: 42.3725,
-      longitude: -71.1189,
-      campusId: harvard.id,
-      userId: bob.id,
-    },
-    {
-      title: "Python Data Science Handbook",
-      description: "Jake VanderPlas Python Data Science Handbook. Great reference for CS109. Like new, never highlighted.",
-      price: 30.0,
-      category: "BOOKS" as const,
-      imageUrl: "https://images.unsplash.com/photo-1515879218367-8466d910auj7?w=400",
-      pickupSpot: "Maxwell Dworkin",
-      latitude: 42.3789,
-      longitude: -71.1174,
-      campusId: harvard.id,
-      userId: diana.id,
-    },
-  ];
-
-  for (const listing of mitListings) {
-    await prisma.listing.create({ data: listing });
+  for (const item of sampleListings) {
+    await prisma.listing.create({ data: item });
   }
 
-  for (const listing of harvardListings) {
-    await prisma.listing.create({ data: listing });
-  }
-
-  console.log("✅ Seed data created successfully!");
-  console.log(`   - 2 campuses (MIT, Harvard)`);
-  console.log(`   - 4 users`);
-  console.log(`   - ${mitListings.length + harvardListings.length} listings`);
+  console.log("✅ Seed data populated successfully!");
+  console.log(`   - ${INDIAN_CAMPUSES.length} Indian premier campuses`);
+  console.log(`   - 4 student demo accounts`);
+  console.log(`   - ${sampleListings.length} listings in ₹ across all expanded categories`);
 }
 
 main()
@@ -346,4 +419,5 @@ main()
   })
   .finally(async () => {
     await prisma.$disconnect();
+    await pool.end();
   });

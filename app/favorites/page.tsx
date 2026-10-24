@@ -21,18 +21,26 @@ export default async function FavoritesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3 border-b border-border pb-4">
-        <div className="h-10 w-10 rounded-xl bg-red-500/10 text-red-500 flex items-center justify-center">
-          <Heart className="h-5 w-5 fill-current" />
+      <div className="flex items-center justify-between border-b border-border pb-4">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-red-500/10 text-red-500 flex items-center justify-center">
+            <Heart className="h-5 w-5 fill-current" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">
+              Saved Items
+            </h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              {favorites.length} {favorites.length === 1 ? "listing" : "listings"} saved to your wishlist
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            Saved Items
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {favorites.length} {favorites.length === 1 ? "listing" : "listings"} saved to your wishlist
-          </p>
-        </div>
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-primary hover:bg-primary/10 transition-colors border border-primary/20"
+        >
+          <span>Home</span>
+        </Link>
       </div>
 
       {favorites.length === 0 ? (

@@ -110,7 +110,7 @@ export async function fetchFeedItems({
     category: l.category,
     status: l.status,
     userId: l.userId,
-    distanceKm: null,
+    distanceKm: campusId ? 0 : null,
     createdAt: l.createdAt,
   }));
 }
