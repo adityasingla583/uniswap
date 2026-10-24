@@ -1,0 +1,84 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Category {
+  BOOKS
+  FURNITURE
+  ELECTRONICS
+  CLOTHING
+  FREE
+  OTHER
+}
+
+enum ListingStatus {
+  AVAILABLE
+  RESERVED
+  SOLD
+}
+
+model Campus {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  latitude  Float
+  longitude Float
+  domain    String?
+  users     User[]
+  listings  Listing[]
+}
+
+model User {
+  id         String     @id @default(cuid())
+  name       String
+  email      String     @unique
+  password   String
+  campusId   String
+  campus     Campus     @relation(fields: [campusId], references: [id])
+  dormZone   String?
+  createdAt  DateTime   @default(now())
+
+  listings   Listing[]
+  favorites  Favorite[]
+}
+
+model Listing {
+  id          String        @id @default(cuid())
+  title       String
+  description String
+  price       Float
+  category    Category
+  status      ListingStatus @default(AVAILABLE)
+  imageUrl    String
+  pickupSpot  String        @default("Campus Library / Main Gate")
+  latitude    Float
+  longitude   Float
+
+  campusId    String
+  campus      Campus        @relation(fields: [campusId], references: [id], onDelete: Cascade)
+
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  favorites   Favorite[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([campusId, createdAt])
+  @@index([category])
+}
+
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String
+  listingId String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, listingId])
+}
