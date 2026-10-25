@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <!-- Vibrant Indigo to Cyan Gradient -->
+    <linearGradient id="ll-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4F46E5" />
+      <stop offset="60%" stop-color="#3B82F6" />
+      <stop offset="100%" stop-color="#06B6D4" />
+    </linearGradient>
+
+    <!-- Glowing White Stroke -->
+    <linearGradient id="ll-stroke" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="100%" stop-color="#E0E7FF" />
+    </linearGradient>
+
+    <!-- Subtle Drop Shadow -->
+    <filter id="ll-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#0f172a" flood-opacity="0.3" />
+    </filter>
+  </defs>
+
+  <!-- Squircle Base with 18px border radius -->
+  <rect width="64" height="64" rx="18" fill="url(#ll-bg)" />
+
+  <!-- Continuous P2P Campus Exchange Loop -->
+  <g filter="url(#ll-shadow)">
+    <!-- Infinity loop ribbon -->
+    <path
+      d="M21 23 C14 23 11 31 16 37 C21 43 27 36 32 32 C37 28 43 21 48 27 C53 33 50 41 43 41 C36 41 33 34 32 32 C31 30 27 23 21 23 Z"
+      fill="none"
+      stroke="url(#ll-stroke)"
+      stroke-width="5.5"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+
+    <!-- Directional arrowheads on the loop to signify active circular exchange -->
+    <polygon points="41,20 47,26 39,27" fill="#FFFFFF" />
+    <polygon points="23,44 17,38 25,37" fill="#FFFFFF" />
+
+    <!-- Center Campus Pin Landmark (Hyper-Local) -->
+    <circle cx="32" cy="32" r="4" fill="#10B981" />
+    <circle cx="32" cy="32" r="6" fill="none" stroke="#FFFFFF" stroke-width="1.5" opacity="0.9" />
+  </g>
+</svg>

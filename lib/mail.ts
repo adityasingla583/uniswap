@@ -9,18 +9,26 @@ interface SendOtpOptions {
 // Create reusable transporter
 function getTransporter() {
   const host = process.env.SMTP_HOST || "smtp.gmail.com";
-  const port = Number(process.env.SMTP_PORT) || 587;
+  const port = Number(process.env.SMTP_PORT) || 465;
   const user = process.env.SMTP_USER;
   const pass = process.env.SMTP_PASS;
 
   if (user && pass) {
+    // For Gmail accounts, nodemailer's built-in 'service: gmail' ensures optimal SSL/TLS on port 465
+    if (user.endsWith("@gmail.com") || host.includes("gmail")) {
+      return nodemailer.createTransport({
+        service: "gmail",
+        auth: { user, pass },
+      });
+    }
+
     return nodemailer.createTransport({
       host,
       port,
       secure: port === 465,
       auth: { user, pass },
-      connectionTimeout: 7000,
-      greetingTimeout: 7000,
+      connectionTimeout: 8000,
+      greetingTimeout: 8000,
       socketTimeout: 8000,
     });
   }

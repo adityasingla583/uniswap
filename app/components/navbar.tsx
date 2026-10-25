@@ -49,8 +49,13 @@ export function Navbar({
           {/* Brand Logo & Home Button */}
           <div className="flex items-center gap-2 shrink-0">
             <Link href="/" className="flex items-center gap-2">
-              <div className="h-9 w-9 rounded-xl bg-primary flex items-center justify-center shadow-sm">
-                <Package className="h-5 w-5 text-white" />
+              <div className="h-9 w-9 rounded-xl overflow-hidden shadow-xs flex items-center justify-center shrink-0">
+                {/* Custom Local Loop Brand Icon matching browser tab */}
+                <img
+                  src="/icon.svg"
+                  alt="Local Loop Icon"
+                  className="h-9 w-9 object-contain"
+                />
               </div>
               <span className="text-xl font-extrabold tracking-tight text-foreground hidden sm:block">
                 Local Loop

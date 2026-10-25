@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { requestOtp, registerWithEmailOtp } from "@/server/otp-actions";
+import { OtpInput } from "@/app/components/otp-input";
 import {
   UserPlus,
   Lock,
@@ -63,13 +64,14 @@ export function RegisterForm({ campuses }: { campuses: Campus[] }) {
     });
   }
 
-  function handleCompleteRegistration() {
-    setErrorMessage("");
-    if (!otpCode || otpCode.length !== 6) {
-      setErrorMessage("Please enter the 6-digit code received on your email.");
+  function handleCompleteRegistration(explicitCode?: string) {
+    const codeToVerify = (typeof explicitCode === "string" ? explicitCode : otpCode).trim();
+    if (codeToVerify.length !== 6) {
+      setErrorMessage("Please fill all 6 boxes before completing registration.");
       return;
     }
 
+    setErrorMessage("");
     startTransition(async () => {
       const res = await registerWithEmailOtp(
         {
@@ -79,7 +81,7 @@ export function RegisterForm({ campuses }: { campuses: Campus[] }) {
           campusId: selectedCampusId,
           dormZone: dormZone.trim() || undefined,
         },
-        otpCode
+        codeToVerify
       );
 
       if (res?.error) {
@@ -182,7 +184,7 @@ export function RegisterForm({ campuses }: { campuses: Campus[] }) {
                 campuses={campuses}
                 value={selectedCampusId}
                 onChange={setSelectedCampusId}
-                placeholder="Search IIT, NIT, BITS, AIIMS, DU..."
+                placeholder="Search all JoSAA IITs, NITs, IIITs, GFTIs (198+ campuses)..."
               />
               <p className="text-[11px] text-muted-foreground">
                 Your campus locks your primary feed to hyper-local items.
@@ -241,7 +243,7 @@ export function RegisterForm({ campuses }: { campuses: Campus[] }) {
         ) : (
           /* Step 2: Email OTP Verification */
           <div className="space-y-4 animate-in fade-in-0 slide-in-from-bottom-2">
-            <div className="space-y-1">
+            <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <label className="text-xs font-semibold text-foreground">
                   Enter 6-Digit Email Code
@@ -254,20 +256,23 @@ export function RegisterForm({ campuses }: { campuses: Campus[] }) {
                   <ArrowLeft className="h-3 w-3" /> Edit Info
                 </button>
               </div>
-              <div className="relative">
-                <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <input
-                  type="text"
-                  maxLength={6}
-                  value={otpCode}
-                  onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
-                  required
-                  autoFocus
-                  placeholder="123456"
-                  className="w-full rounded-lg border border-border bg-surface pl-10 pr-4 py-2.5 text-center font-mono text-lg tracking-widest font-bold text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
-                />
-              </div>
-              <p className="text-[11px] text-muted-foreground">
+
+              {/* 6 Individual Digit Boxes */}
+              <OtpInput
+                length={6}
+                value={otpCode}
+                onChange={(val) => {
+                  setOtpCode(val);
+                  if (errorMessage) setErrorMessage("");
+                }}
+                onComplete={(code) => handleCompleteRegistration(code)}
+                onEnterPress={() => handleCompleteRegistration()}
+                disabled={isPending}
+                hasError={!!errorMessage}
+                autoFocus={true}
+              />
+
+              <p className="text-[11px] text-muted-foreground text-center">
                 We sent a 6-digit verification code to{" "}
                 <strong className="text-foreground">{email}</strong>.
               </p>
@@ -275,8 +280,8 @@ export function RegisterForm({ campuses }: { campuses: Campus[] }) {
 
             <button
               type="button"
-              onClick={handleCompleteRegistration}
-              disabled={isPending || otpCode.length !== 6}
+              onClick={() => handleCompleteRegistration()}
+              disabled={isPending}
               className="w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-600 py-2.5 px-4 text-sm font-semibold text-white hover:bg-emerald-700 transition-colors disabled:opacity-50 shadow-sm"
             >
               {isPending ? (

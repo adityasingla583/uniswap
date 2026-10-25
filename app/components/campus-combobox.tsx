@@ -122,7 +122,7 @@ export function CampusCombobox({
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search IIT, NIT, BITS, AIIMS, DU..."
+              placeholder="Search IIT, NIT, IIIT, GFTI (198+ campuses)..."
               className="w-full rounded-lg border border-border bg-surface pl-8 pr-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
             />
           </div>

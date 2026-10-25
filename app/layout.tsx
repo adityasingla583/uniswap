@@ -11,6 +11,13 @@ export const metadata: Metadata = {
   title: "Local Loop | Hyper-Local Campus Marketplace",
   description:
     "Peer-to-peer campus marketplace for students to buy, sell, and giveaway textbooks, dorm gear, electronics, and more.",
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico", sizes: "any" },
+    ],
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 export default async function RootLayout({

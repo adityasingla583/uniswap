@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, useTransition, useActionState } from "react";
 import { login } from "@/server/actions";
 import { requestOtp, loginWithEmailOtp } from "@/server/otp-actions";
+import { OtpInput } from "@/app/components/otp-input";
 import {
   LogIn,
   Lock,
@@ -22,7 +23,7 @@ export default function LoginPage() {
   const [authMode, setAuthMode] = useState<"OTP" | "PASSWORD">("OTP");
 
   // State for Email OTP mode
-  const [emailForOtp, setEmailForOtp] = useState("aarav@iitb.ac.in");
+  const [emailForOtp, setEmailForOtp] = useState("demotests403@gmail.com");
   const [otpCode, setOtpCode] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [otpError, setOtpError] = useState("");
@@ -46,10 +47,16 @@ export default function LoginPage() {
     });
   }
 
-  function handleVerifyOtp() {
+  function handleVerifyOtp(explicitCode?: string) {
+    const codeToVerify = (typeof explicitCode === "string" ? explicitCode : otpCode).trim();
+    if (codeToVerify.length !== 6) {
+      setOtpError("Please fill all 6 boxes before verifying.");
+      return;
+    }
+
     setOtpError("");
     startOtpTransition(async () => {
-      const res = await loginWithEmailOtp(emailForOtp, otpCode);
+      const res = await loginWithEmailOtp(emailForOtp, codeToVerify);
       if (res?.error) {
         setOtpError(res.error);
       }
@@ -172,10 +179,10 @@ export default function LoginPage() {
               </div>
             ) : (
               <div className="space-y-4 animate-in fade-in-0 slide-in-from-bottom-2">
-                <div className="space-y-1">
+                <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <label className="text-xs font-semibold text-foreground">
-                      Enter 6-Digit Code
+                      Enter 6-Digit Verification Code
                     </label>
                     <button
                       type="button"
@@ -185,28 +192,31 @@ export default function LoginPage() {
                       Change Email
                     </button>
                   </div>
-                  <div className="relative">
-                    <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <input
-                      type="text"
-                      maxLength={6}
-                      value={otpCode}
-                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
-                      required
-                      autoFocus
-                      placeholder="123456"
-                      className="w-full rounded-lg border border-border bg-surface pl-10 pr-4 py-2.5 text-center font-mono text-lg tracking-widest font-bold text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
-                    />
-                  </div>
-                  <p className="text-[11px] text-muted-foreground">
+
+                  {/* 6 Individual Digit Boxes */}
+                  <OtpInput
+                    length={6}
+                    value={otpCode}
+                    onChange={(val) => {
+                      setOtpCode(val);
+                      if (otpError) setOtpError("");
+                    }}
+                    onComplete={(code) => handleVerifyOtp(code)}
+                    onEnterPress={() => handleVerifyOtp()}
+                    disabled={isPendingOtp}
+                    hasError={!!otpError}
+                    autoFocus={true}
+                  />
+
+                  <p className="text-[11px] text-muted-foreground text-center">
                     Code sent to <strong className="text-foreground">{emailForOtp}</strong>. Valid for 10 minutes.
                   </p>
                 </div>
 
                 <button
                   type="button"
-                  onClick={handleVerifyOtp}
-                  disabled={isPendingOtp || otpCode.length !== 6}
+                  onClick={() => handleVerifyOtp()}
+                  disabled={isPendingOtp}
                   className="w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-600 py-2.5 px-4 text-sm font-semibold text-white hover:bg-emerald-700 transition-colors disabled:opacity-50 shadow-sm"
                 >
                   {isPendingOtp ? (
@@ -310,7 +320,10 @@ export default function LoginPage() {
 
         <div className="rounded-xl bg-muted/60 p-3 text-xs text-muted-foreground space-y-1">
           <p className="font-semibold text-foreground flex items-center gap-1">
-            <Sparkles className="h-3 w-3 text-amber-500" /> Demo Campus Accounts:
+            <Sparkles className="h-3 w-3 text-amber-500" /> Active Campus Accounts:
+          </p>
+          <p>
+            Your Verified Email: <code className="text-primary font-mono font-medium">demotests403@gmail.com</code>
           </p>
           <p>
             IIT Bombay: <code className="text-primary font-mono font-medium">aarav@iitb.ac.in</code>
@@ -319,7 +332,7 @@ export default function LoginPage() {
             IIT Delhi: <code className="text-primary font-mono font-medium">priya@iitd.ac.in</code>
           </p>
           <p className="text-[11px] text-muted-foreground">
-            Both support password (<code className="font-mono">password123</code>) or instant Email OTP!
+            All accounts support password (<code className="font-mono">password123</code>) or live Nodemailer Email OTP!
           </p>
         </div>
       </div>

@@ -3,77 +3,13 @@ import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 import { hash } from "bcryptjs";
+import { ALL_INDIAN_CAMPUSES } from "./institutes-data";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
-const INDIAN_CAMPUSES = [
-  // IITs
-  { name: "IIT Bombay (Mumbai)", latitude: 19.1334, longitude: 72.9133, domain: "iitb.ac.in" },
-  { name: "IIT Delhi (New Delhi)", latitude: 28.5450, longitude: 77.1926, domain: "iitd.ac.in" },
-  { name: "IIT Madras (Chennai)", latitude: 12.9915, longitude: 80.2337, domain: "iitm.ac.in" },
-  { name: "IIT Kanpur (Kanpur)", latitude: 26.5123, longitude: 80.2329, domain: "iitk.ac.in" },
-  { name: "IIT Kharagpur (Kharagpur)", latitude: 22.3149, longitude: 87.3105, domain: "iitkgp.ac.in" },
-  { name: "IIT Roorkee (Roorkee)", latitude: 29.8649, longitude: 77.8965, domain: "iitr.ac.in" },
-  { name: "IIT Guwahati (Guwahati)", latitude: 26.1878, longitude: 91.6916, domain: "iitg.ac.in" },
-  { name: "IIT BHU (Varanasi)", latitude: 25.2677, longitude: 82.9913, domain: "itbhu.ac.in" },
-  { name: "IIT Hyderabad (Kandi)", latitude: 17.5947, longitude: 78.1230, domain: "iith.ac.in" },
-  { name: "IIT Indore (Simrol)", latitude: 22.5204, longitude: 75.9207, domain: "iiti.ac.in" },
-  { name: "IIT Gandhinagar (Palaj)", latitude: 23.2114, longitude: 72.6842, domain: "iitgn.ac.in" },
-  { name: "IIT Ropar (Rupnagar)", latitude: 30.9678, longitude: 76.4732, domain: "iitrpr.ac.in" },
-
-  // IISc & BITS
-  { name: "IISc Bangalore (Bengaluru)", latitude: 13.0219, longitude: 77.5671, domain: "iisc.ac.in" },
-  { name: "BITS Pilani (Pilani Campus)", latitude: 28.3639, longitude: 75.5870, domain: "pilani.bits-pilani.ac.in" },
-  { name: "BITS Pilani (Goa Campus)", latitude: 15.3911, longitude: 73.8783, domain: "goa.bits-pilani.ac.in" },
-  { name: "BITS Pilani (Hyderabad Campus)", latitude: 17.5449, longitude: 78.5718, domain: "hyderabad.bits-pilani.ac.in" },
-
-  // NITs
-  { name: "NIT Trichy (Tiruchirappalli)", latitude: 10.7589, longitude: 78.8132, domain: "nitt.edu" },
-  { name: "NIT Surathkal (Mangalore)", latitude: 13.0108, longitude: 74.7943, domain: "nitk.edu.in" },
-  { name: "NIT Warangal (Warangal)", latitude: 17.9835, longitude: 79.5308, domain: "nitw.ac.in" },
-  { name: "NIT Rourkela (Rourkela)", latitude: 22.2531, longitude: 84.9011, domain: "nitrkl.ac.in" },
-  { name: "NIT Calicut (Kozhikode)", latitude: 11.3216, longitude: 75.9336, domain: "nitc.ac.in" },
-  { name: "VNIT Nagpur (Nagpur)", latitude: 21.1234, longitude: 79.0514, domain: "vnit.ac.in" },
-  { name: "MNIT Jaipur (Jaipur)", latitude: 26.8637, longitude: 75.8115, domain: "mnit.ac.in" },
-  { name: "MNNIT Allahabad (Prayagraj)", latitude: 25.4921, longitude: 81.8667, domain: "mnnit.ac.in" },
-
-  // IIMs
-  { name: "IIM Ahmedabad (Ahmedabad)", latitude: 23.0315, longitude: 72.5314, domain: "iima.ac.in" },
-  { name: "IIM Bangalore (Bengaluru)", latitude: 12.8953, longitude: 77.5996, domain: "iimb.ac.in" },
-  { name: "IIM Calcutta (Kolkata)", latitude: 22.4384, longitude: 88.3075, domain: "iimcal.ac.in" },
-  { name: "IIM Lucknow (Lucknow)", latitude: 26.9248, longitude: 80.9329, domain: "iiml.ac.in" },
-  { name: "IIM Kozhikode (Kozhikode)", latitude: 11.2858, longitude: 75.8770, domain: "iimk.ac.in" },
-  { name: "IIM Indore (Indore)", latitude: 22.6517, longitude: 75.7876, domain: "iimidr.ac.in" },
-
-  // Medical
-  { name: "AIIMS New Delhi (New Delhi)", latitude: 28.5672, longitude: 77.2100, domain: "aiims.edu" },
-  { name: "AIIMS Rishikesh (Rishikesh)", latitude: 30.0763, longitude: 78.2878, domain: "aiimsrishikesh.edu.in" },
-  { name: "AIIMS Jodhpur (Jodhpur)", latitude: 26.2427, longitude: 73.0076, domain: "aiimsjodhpur.edu.in" },
-  { name: "JIPMER (Puducherry)", latitude: 11.9546, longitude: 79.8115, domain: "jipmer.edu.in" },
-
-  // Premier Universities
-  { name: "Delhi University - North Campus", latitude: 28.6904, longitude: 77.2120, domain: "du.ac.in" },
-  { name: "Delhi University - South Campus", latitude: 28.5847, longitude: 77.1641, domain: "south.du.ac.in" },
-  { name: "JNU - Jawaharlal Nehru University (Delhi)", latitude: 28.5401, longitude: 77.1664, domain: "jnu.ac.in" },
-  { name: "DTU - Delhi Technological University", latitude: 28.7501, longitude: 77.1177, domain: "dtu.ac.in" },
-  { name: "NSUT - Netaji Subhas University of Technology", latitude: 28.6092, longitude: 77.0372, domain: "nsut.ac.in" },
-  { name: "IIIT Hyderabad (Gachibowli)", latitude: 17.4451, longitude: 78.3489, domain: "iiit.ac.in" },
-  { name: "IIIT Bangalore (Electronic City)", latitude: 12.8440, longitude: 77.6633, domain: "iiitb.ac.in" },
-  { name: "IIIT Delhi (Okhla)", latitude: 28.5459, longitude: 77.2732, domain: "iiitd.ac.in" },
-  { name: "VIT - Vellore Institute of Technology", latitude: 12.9692, longitude: 79.1559, domain: "vit.ac.in" },
-  { name: "Manipal Institute of Technology (MAHE)", latitude: 13.3525, longitude: 74.7928, domain: "manipal.edu" },
-  { name: "Anna University (Chennai)", latitude: 13.0109, longitude: 80.2354, domain: "annauniv.edu" },
-  { name: "Jadavpur University (Kolkata)", latitude: 22.4988, longitude: 88.3715, domain: "jadavpuruniversity.in" },
-  { name: "COEP Technological University (Pune)", latitude: 18.5298, longitude: 73.8565, domain: "coep.org.in" },
-  { name: "Ashoka University (Sonipat)", latitude: 28.9482, longitude: 77.1009, domain: "ashoka.edu.in" },
-  { name: "Thapar Institute of Engg (Patiala)", latitude: 30.3539, longitude: 76.3639, domain: "thapar.edu" },
-  { name: "Christ University (Bengaluru)", latitude: 12.9344, longitude: 77.6060, domain: "christuniversity.in" },
-  { name: "SRM University (Chennai)", latitude: 12.8230, longitude: 80.0450, domain: "srmist.edu.in" },
-  { name: "Jamia Millia Islamia (New Delhi)", latitude: 28.5616, longitude: 77.2802, domain: "jmi.ac.in" },
-  { name: "Panjab University (Chandigarh)", latitude: 30.7599, longitude: 76.7684, domain: "puchd.ac.in" },
-];
+const INDIAN_CAMPUSES = ALL_INDIAN_CAMPUSES;
 
 async function main() {
   console.log("🌱 Starting seed script for Indian campuses & localized items...");
