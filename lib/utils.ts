@@ -32,3 +32,36 @@ export function haversineDistance(
 function toRad(deg: number): number {
   return (deg * Math.PI) / 180;
 }
+
+/**
+ * Normalizes user-submitted image URLs, converting publicly accessible
+ * Google Drive share links into direct CDN image streams.
+ */
+export function normalizeImageUrl(url: string): string {
+  if (!url) return "";
+  const trimmed = url.trim();
+
+  // 1. Google Drive share links
+  if (
+    trimmed.includes("drive.google.com") ||
+    trimmed.includes("docs.google.com")
+  ) {
+    // Extract fileId from /file/d/FILE_ID or id=FILE_ID
+    const match =
+      trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) ||
+      trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+
+    if (match && match[1]) {
+      const fileId = match[1];
+      // Google UserContent CDN serves public images directly with CORS and caching
+      return `https://lh3.googleusercontent.com/d/${fileId}`;
+    }
+  }
+
+  // 2. Dropbox share links (change ?dl=0 to ?raw=1)
+  if (trimmed.includes("dropbox.com") && trimmed.includes("dl=0")) {
+    return trimmed.replace("dl=0", "raw=1");
+  }
+
+  return trimmed;
+}

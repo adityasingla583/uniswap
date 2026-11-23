@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { getListingById, isFavorited } from "@/server/queries";
 import { getSession } from "@/lib/auth";
-import { formatPrice } from "@/lib/utils";
+import { formatPrice, normalizeImageUrl } from "@/lib/utils";
 import { ListingDetailActions } from "./listing-detail-actions";
 import { MapPin, User, ArrowLeft, Clock, ShieldCheck, Tag } from "lucide-react";
 
@@ -48,7 +48,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
         <div className="lg:col-span-7 space-y-4">
           <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl border border-border bg-muted">
             <Image
-              src={listing.imageUrl}
+              src={normalizeImageUrl(listing.imageUrl)}
               alt={listing.title}
               fill
               priority
@@ -123,14 +123,31 @@ export default async function ListingDetailPage({ params }: PageProps) {
                   {listing.user.name.charAt(0)}
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-foreground">{listing.user.name}</p>
+                  <p className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                    {listing.user.name}
+                    {listing.user.phoneVerified && (
+                      <span
+                        className="inline-flex items-center gap-0.5 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                        title="Anti-Sybil: Verified 1-account-per-phone number"
+                      >
+                        <ShieldCheck className="h-3 w-3" />
+                        Phone Verified
+                      </span>
+                    )}
+                  </p>
                   <p className="text-xs text-muted-foreground">
                     {listing.user.campus?.name} Student
                   </p>
                 </div>
               </div>
-              <div className="text-xs text-muted-foreground">
-                Verified Student
+              <div className="text-right">
+                <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  Verified Student
+                </span>
+                <p className="text-[10px] text-muted-foreground">
+                  Anti-Sybil Protected
+                </p>
               </div>
             </div>
           </div>

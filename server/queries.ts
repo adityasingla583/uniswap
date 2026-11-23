@@ -1,6 +1,7 @@
 import "server-only";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
+import { unstable_cache } from "next/cache";
 
 export type FeedParams = {
   campusId?: string;
@@ -115,19 +116,23 @@ export async function fetchFeedItems({
   }));
 }
 
-export async function getCampuses() {
-  return prisma.campus.findMany({
-    orderBy: { name: "asc" },
-    select: { id: true, name: true, latitude: true, longitude: true },
-  });
-}
+export const getCampuses = unstable_cache(
+  async () => {
+    return prisma.campus.findMany({
+      orderBy: { name: "asc" },
+      select: { id: true, name: true, latitude: true, longitude: true },
+    });
+  },
+  ["campuses-list-cache"],
+  { revalidate: 3600, tags: ["campuses"] }
+);
 
 export async function getListingById(id: string) {
   return prisma.listing.findUnique({
     where: { id },
     include: {
       campus: true,
-      user: { select: { id: true, name: true, email: true, campus: true } },
+      user: { select: { id: true, name: true, email: true, phoneVerified: true, campus: true } },
       _count: { select: { favorites: true } },
     },
   });

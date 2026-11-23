@@ -14,7 +14,10 @@ import {
   Sparkles,
   ArrowLeft,
   Home,
+  CheckCircle2,
+  ExternalLink,
 } from "lucide-react";
+import { normalizeImageUrl } from "@/lib/utils";
 
 const SAMPLE_IMAGES = [
   { label: "Cycle", url: "https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=600" },
@@ -145,24 +148,59 @@ export function CreateListingForm({ userCampusName }: { userCampusName: string }
             </div>
           </div>
 
-          {/* Image URL with Presets */}
+          {/* Image URL with Google Drive Support & Live Preview */}
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-foreground flex items-center gap-1">
-              <ImageIcon className="h-3.5 w-3.5 text-muted-foreground" />
-              Image URL
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold text-foreground flex items-center gap-1">
+                <ImageIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                Photo / Image URL
+              </label>
+              <span className="text-[11px] text-primary font-medium flex items-center gap-1">
+                Google Drive links supported
+              </span>
+            </div>
+
             <input
               type="url"
               name="imageUrl"
               required
               value={selectedImage}
               onChange={(e) => setSelectedImage(e.target.value)}
-              placeholder="https://images.unsplash.com/..."
+              placeholder="Paste Google Drive link or image URL (https://drive.google.com/...)..."
               className="w-full rounded-lg border border-border bg-surface px-4 py-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 font-mono"
             />
-            <div className="flex items-center gap-1.5 flex-wrap">
+
+            {/* Google Drive Detection Banner */}
+            {(selectedImage.includes("drive.google.com") || selectedImage.includes("docs.google.com")) && (
+              <div className="flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 rounded-xl animate-in fade-in-50">
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                <span>
+                  <strong>Google Drive Link Detected:</strong> Automatically converted to a high-speed direct campus image stream.
+                </span>
+              </div>
+            )}
+
+            {/* Live Image Preview */}
+            {selectedImage.trim() && (
+              <div className="relative aspect-[16/9] max-h-48 w-full rounded-xl overflow-hidden border border-border bg-muted shadow-xs">
+                <img
+                  src={normalizeImageUrl(selectedImage)}
+                  alt="Listing image preview"
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-black/70 text-white text-[11px] font-semibold backdrop-blur-xs flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3 text-emerald-400" /> Live Preview
+                </div>
+              </div>
+            )}
+
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              💡 <strong>How to use Google Drive photos:</strong> Upload photo to Google Drive &rarr; Right click &rarr; Click <em>&quot;Share&quot;</em> &rarr; Set General Access to <strong>&quot;Anyone with the link can view&quot;</strong> &rarr; Copy and paste link here.
+            </p>
+
+            <div className="flex items-center gap-1.5 flex-wrap pt-1">
               <span className="text-xs text-muted-foreground flex items-center gap-1">
-                <Sparkles className="h-3 w-3 text-amber-500" /> Sample photos:
+                <Sparkles className="h-3 w-3 text-amber-500" /> Or pick demo photo:
               </span>
               {SAMPLE_IMAGES.map((img) => (
                 <button

@@ -97,20 +97,35 @@ export async function sendMessageAsync(conversationId: string, content: string) 
     data: { updatedAt: new Date() },
   });
 
-  revalidatePath(`/chats/${conversationId}`);
+  // Only revalidate the chats inbox summary list so it reflects the last message when navigating back.
+  // DO NOT revalidate `/chats/${conversationId}` because that forces Next.js to re-render the active conversation page from the server!
   revalidatePath("/chats");
 
   return { success: true, message };
 }
 
-export async function fetchMessagesAsync(conversationId: string) {
+export async function fetchMessagesAsync(
+  conversationId: string,
+  lastMessageId?: string
+) {
   const session = await getSession();
   if (!session) {
     return { error: "Not authenticated", messages: [] };
   }
 
+  // Single optimized query fetching conversation authorization and messages in one round-trip
   const conversation = await prisma.conversation.findUnique({
     where: { id: conversationId },
+    select: {
+      buyerId: true,
+      sellerId: true,
+      messages: {
+        include: {
+          sender: { select: { id: true, name: true } },
+        },
+        orderBy: { createdAt: "asc" },
+      },
+    },
   });
 
   if (!conversation) {
@@ -124,23 +139,34 @@ export async function fetchMessagesAsync(conversationId: string) {
     return { error: "Not authorized", messages: [] };
   }
 
-  // Mark other's messages as read
-  await prisma.message.updateMany({
-    where: {
-      conversationId,
-      senderId: { not: session.userId },
-      read: false,
-    },
-    data: { read: true },
-  });
+  const messages = conversation.messages;
+  const latestMsg = messages[messages.length - 1];
 
-  const messages = await prisma.message.findMany({
-    where: { conversationId },
-    include: {
-      sender: { select: { id: true, name: true } },
-    },
-    orderBy: { createdAt: "asc" },
-  });
+  const hasUnreadFromOther = messages.some(
+    (m) => !m.read && m.senderId !== session.userId
+  );
+
+  // If client already has latest message and nothing is unread, skip heavy work
+  if (lastMessageId && latestMsg && latestMsg.id === lastMessageId && !hasUnreadFromOther) {
+    return { success: true, notModified: true, messages: [] };
+  }
+
+  // Only perform update write query when there are actually unread messages
+  if (hasUnreadFromOther) {
+    await prisma.message.updateMany({
+      where: {
+        conversationId,
+        senderId: { not: session.userId },
+        read: false,
+      },
+      data: { read: true },
+    });
+    for (const msg of messages) {
+      if (msg.senderId !== session.userId) {
+        msg.read = true;
+      }
+    }
+  }
 
   return { success: true, messages, currentUserId: session.userId };
 }

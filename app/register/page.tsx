@@ -11,9 +11,5 @@ export const metadata = {
 
 export default async function RegisterPage() {
   const campuses = await getCampuses();
-  return (
-    <Suspense fallback={<div className="min-h-[70vh] flex items-center justify-center text-sm text-muted-foreground">Loading registration...</div>}>
-      <RegisterForm campuses={campuses} />
-    </Suspense>
-  );
+  return <RegisterForm campuses={campuses} />;
 }

@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import { prisma, pool } from "@/lib/prisma";
 import { getSession, createSession } from "@/lib/auth";
 import { registerSchema } from "@/lib/validations";
 import { sendOtpEmail } from "@/lib/mail";
@@ -108,14 +108,32 @@ export async function loginWithEmailOtp(email: string, code: string) {
     });
   }
 
+  const isAdminEmail =
+    normalizedEmail === "adityasingla03583@gmail.com" ||
+    normalizedEmail === "aditysasingla03583@gmail.com";
+
+  if (isAdminEmail) {
+    try {
+      await pool.query(`UPDATE "User" SET "isAdmin" = true WHERE id = $1`, [user.id]);
+    } catch {
+      // ignore
+    }
+  }
+
   await createSession(user.id);
-  redirect("/");
+
+  if (isAdminEmail || user.isAdmin) {
+    redirect("/admin");
+  } else {
+    redirect("/");
+  }
 }
 
 export async function registerWithEmailOtp(
   formData: {
     name: string;
     email: string;
+    phone?: string;
     password: string;
     campusId: string;
     dormZone?: string;
@@ -144,6 +162,7 @@ export async function registerWithEmailOtp(
   const parsed = registerSchema.safeParse({
     name: formData.name,
     email: normalizedEmail,
+    phone: formData.phone || "9876543210",
     password: formData.password,
     campusId: formData.campusId,
     dormZone: formData.dormZone || undefined,
@@ -163,10 +182,13 @@ export async function registerWithEmailOtp(
 
   const hashedPassword = await hash(parsed.data.password, 12);
 
+  const isAdmin = normalizedEmail === "adityasingla03583@gmail.com";
+
   const newUser = await prisma.user.create({
     data: {
       name: parsed.data.name,
       email: normalizedEmail,
+      isAdmin,
       password: hashedPassword,
       campusId: parsed.data.campusId,
       dormZone: parsed.data.dormZone,

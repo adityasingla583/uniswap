@@ -3,9 +3,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { ThemeProvider } from "./components/theme-provider";
 import { Navbar } from "./components/navbar";
-import { getCampuses } from "@/server/queries";
 import { getSession } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma, pool } from "@/lib/prisma";
 
 export const metadata: Metadata = {
   title: "Local Loop | Hyper-Local Campus Marketplace",
@@ -25,29 +24,59 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [campuses, session] = await Promise.all([
-    getCampuses().catch(() => []),
-    getSession().catch(() => null),
-  ]);
+  const session = await getSession().catch(() => null);
 
   let user: {
     id: string;
     name: string;
+    email?: string;
+    isAdmin?: boolean;
     campusId: string;
     campus: { id: string; name: string };
   } | null = null;
+  let pendingAdminNotifications = 0;
 
   if (session?.userId) {
     try {
-      user = await prisma.user.findUnique({
-        where: { id: session.userId },
-        select: {
-          id: true,
-          name: true,
-          campusId: true,
-          campus: { select: { id: true, name: true } },
-        },
-      });
+      const res = await pool.query<{
+        id: string;
+        name: string;
+        email: string;
+        isAdmin: boolean;
+        campusId: string;
+        campusName: string | null;
+      }>(
+        `SELECT u.id, u.name, u.email, u."isAdmin", u."campusId", c.name as "campusName"
+         FROM "User" u
+         LEFT JOIN "Campus" c ON c.id = u."campusId"
+         WHERE u.id = $1 LIMIT 1`,
+        [session.userId]
+      );
+
+      const row = res.rows[0];
+      if (row) {
+        const emailLower = (row.email || "").toLowerCase();
+        const isMasterAdmin =
+          row.isAdmin ||
+          emailLower === "adityasingla03583@gmail.com" ||
+          emailLower === "aditysasingla03583@gmail.com";
+
+        user = {
+          id: row.id,
+          name: row.name,
+          email: row.email,
+          isAdmin: isMasterAdmin,
+          campusId: row.campusId,
+          campus: { id: row.campusId, name: row.campusName || "Campus" },
+        };
+
+        if (isMasterAdmin) {
+          const countRes = await pool.query<{ count: string }>(
+            `SELECT count(*) FROM "CampusRequest" WHERE status = 'PENDING'`
+          );
+          pendingAdminNotifications = parseInt(countRes.rows[0]?.count || "0", 10);
+        }
+      }
     } catch {
       user = null;
     }
@@ -58,7 +87,7 @@ export default async function RootLayout({
       <body className="min-h-full flex flex-col bg-background text-foreground transition-colors font-sans">
         <ThemeProvider>
           <Suspense fallback={<div className="h-16 border-b border-border bg-surface/80" />}>
-            <Navbar campuses={campuses} user={user} />
+            <Navbar user={user} pendingAdminNotifications={pendingAdminNotifications} />
           </Suspense>
           <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
             {children}

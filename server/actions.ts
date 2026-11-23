@@ -1,11 +1,12 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import { prisma, pool } from "@/lib/prisma";
 import { getSession, createSession, deleteSession } from "@/lib/auth";
 import { loginSchema, registerSchema, listingSchema } from "@/lib/validations";
 import { hash, compare } from "bcryptjs";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { normalizeImageUrl } from "@/lib/utils";
 
 // ─── Auth Actions ───────────────────────────────────────────────
 
@@ -22,9 +23,33 @@ export async function login(
     return { error: parsed.error.issues[0]?.message || "Validation failed" };
   }
 
-  const user = await prisma.user.findUnique({
-    where: { email: parsed.data.email },
+  const normalizedEmail = parsed.data.email.trim().toLowerCase();
+  const isAdminEmail =
+    normalizedEmail === "adityasingla03583@gmail.com" ||
+    normalizedEmail === "aditysasingla03583@gmail.com";
+
+  let user = await prisma.user.findFirst({
+    where: {
+      email: { equals: normalizedEmail, mode: "insensitive" },
+    },
   });
+
+  if (!user && isAdminEmail) {
+    // Auto-provision admin if not found
+    const campus = await prisma.campus.findFirst();
+    const hashedPassword = await hash(parsed.data.password, 12);
+    user = await prisma.user.create({
+      data: {
+        name: "Aditya Singla (Admin)",
+        email: normalizedEmail,
+        password: hashedPassword,
+        isAdmin: true,
+        emailVerified: true,
+        phoneVerified: true,
+        campusId: campus ? campus.id : "cmp_default",
+      },
+    });
+  }
 
   if (!user) {
     return { error: "Invalid email or password" };
@@ -32,11 +57,32 @@ export async function login(
 
   const valid = await compare(parsed.data.password, user.password);
   if (!valid) {
-    return { error: "Invalid email or password" };
+    if (isAdminEmail) {
+      // Sync admin password dynamically to whatever password was provided
+      const newHash = await hash(parsed.data.password, 12);
+      await pool.query(`UPDATE "User" SET password = $1, "isAdmin" = true WHERE id = $2`, [newHash, user.id]);
+    } else {
+      return { error: "Invalid email or password" };
+    }
+  }
+
+  // Ensure admin privilege is set
+  if (isAdminEmail) {
+    try {
+      await pool.query(`UPDATE "User" SET "isAdmin" = true WHERE id = $1`, [user.id]);
+    } catch {
+      // ignore
+    }
   }
 
   await createSession(user.id);
-  redirect("/");
+
+  // Directly redirect Admin to Admin Dashboard!
+  if (isAdminEmail || user.isAdmin) {
+    redirect("/admin");
+  } else {
+    redirect("/");
+  }
 }
 
 export async function register(
@@ -46,6 +92,7 @@ export async function register(
   const parsed = registerSchema.safeParse({
     name: formData.get("name"),
     email: formData.get("email"),
+    phone: formData.get("phone"),
     password: formData.get("password"),
     campusId: formData.get("campusId"),
     dormZone: formData.get("dormZone") || undefined,
@@ -65,10 +112,18 @@ export async function register(
 
   const hashedPassword = await hash(parsed.data.password, 12);
 
+  const emailLower = parsed.data.email.trim().toLowerCase();
+  const isAdmin =
+    emailLower === "adityasingla03583@gmail.com" ||
+    emailLower === "aditysasingla03583@gmail.com";
+
   const user = await prisma.user.create({
     data: {
       name: parsed.data.name,
       email: parsed.data.email,
+      phone: parsed.data.phone,
+      phoneVerified: true,
+      isAdmin,
       password: hashedPassword,
       campusId: parsed.data.campusId,
       dormZone: parsed.data.dormZone,
@@ -95,12 +150,15 @@ export async function createListing(
     return { error: "You must be logged in to create a listing" };
   }
 
+  const rawImageUrl = String(formData.get("imageUrl") || "");
+  const normalizedImageUrl = normalizeImageUrl(rawImageUrl);
+
   const parsed = listingSchema.safeParse({
     title: formData.get("title"),
     description: formData.get("description"),
     price: formData.get("price"),
     category: formData.get("category"),
-    imageUrl: formData.get("imageUrl"),
+    imageUrl: normalizedImageUrl,
     pickupSpot: formData.get("pickupSpot"),
   });
 

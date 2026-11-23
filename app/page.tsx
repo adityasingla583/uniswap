@@ -123,7 +123,7 @@ export default async function HomePage({ searchParams }: PageProps) {
                 Currently previewing items from <strong className="text-primary">{activeCampus?.name}</strong>.
               </p>
               <p className="text-xs text-muted-foreground">
-                Register to select your own institute from 53+ universities across India.
+                Register to select your own institute from 230+ universities across India (including all IIITs, NITs, IITs).
               </p>
             </div>
           </div>
@@ -133,14 +133,24 @@ export default async function HomePage({ searchParams }: PageProps) {
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-xs font-semibold text-white hover:bg-primary-hover shadow-sm transition-all shrink-0"
           >
             <UserPlus className="h-3.5 w-3.5" />
-            Register Your Campus
+            Register Yourself
           </Link>
         </div>
       )}
 
       {/* Filter and Distance Discovery Bar */}
       <div className="sticky top-16 z-30 bg-background/95 backdrop-blur-sm py-2">
-        <Suspense fallback={<div className="h-12 rounded-xl bg-muted animate-pulse" />}>
+        <Suspense
+          fallback={
+            <div className="flex items-center gap-2 overflow-x-auto py-1 scrollbar-none">
+              <div className="h-9 w-36 rounded-xl shimmer-box shrink-0" />
+              <div className="h-9 w-20 rounded-xl shimmer-box shrink-0" />
+              <div className="h-9 w-24 rounded-full shimmer-box shrink-0" />
+              <div className="h-9 w-28 rounded-full shimmer-box shrink-0" />
+              <div className="h-9 w-32 rounded-full shimmer-box shrink-0" />
+            </div>
+          }
+        >
           <FilterBar userCampusName={activeCampus?.name} />
         </Suspense>
       </div>

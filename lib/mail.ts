@@ -89,14 +89,18 @@ export async function sendOtpEmail({ to, code, purpose = "Authentication" }: Sen
     });
     console.log(`[NODEMAILER] Email successfully sent to ${to}: ${info.messageId}`);
     return { success: true, messageId: info.messageId };
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("[NODEMAILER ERROR]", err);
+
+    const errorMessage = err instanceof Error ? err.message : "Unknown error";
+    const errorCode =
+      typeof err === "object" && err !== null && "code" in err ? String(err.code) : undefined;
     const isBlocked =
-      err.code === "ETIMEDOUT" ||
-      err.code === "ESOCKET" ||
-      err.code === "ENETUNREACH" ||
-      err.message?.includes("timed out") ||
-      err.message?.includes("ENETUNREACH");
+      errorCode === "ETIMEDOUT" ||
+      errorCode === "ESOCKET" ||
+      errorCode === "ENETUNREACH" ||
+      errorMessage.includes("timed out") ||
+      errorMessage.includes("ENETUNREACH");
 
     if (isBlocked) {
       return {
@@ -108,7 +112,7 @@ export async function sendOtpEmail({ to, code, purpose = "Authentication" }: Sen
 
     return {
       success: false,
-      error: `Failed to deliver email: ${err.message || "Invalid credentials"}.`,
+      error: `Failed to deliver email: ${errorMessage || "Invalid credentials"}.`,
     };
   }
 }

@@ -20,10 +20,10 @@ import {
 } from "lucide-react";
 
 export default function LoginPage() {
-  const [authMode, setAuthMode] = useState<"OTP" | "PASSWORD">("OTP");
+  const [authMode, setAuthMode] = useState<"OTP" | "PASSWORD">("PASSWORD");
 
   // State for Email OTP mode
-  const [emailForOtp, setEmailForOtp] = useState("demotests403@gmail.com");
+  const [emailForOtp, setEmailForOtp] = useState("");
   const [otpCode, setOtpCode] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [otpError, setOtpError] = useState("");
@@ -264,8 +264,7 @@ export default function LoginPage() {
                   type="email"
                   name="email"
                   required
-                  defaultValue="aarav@iitb.ac.in"
-                  placeholder="student@iitb.ac.in"
+                  placeholder="student@iitb.ac.in or your-email@gmail.com"
                   className="w-full rounded-lg border border-border bg-surface pl-10 pr-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
               </div>

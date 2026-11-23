@@ -2,15 +2,17 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { Search, Plus, Heart, Package, LogOut, LogIn, Menu, X, Home, School, MessageCircle } from "lucide-react";
+import { Search, Plus, Heart, Package, LogOut, LogIn, Menu, X, Home, School, MessageCircle, Loader2, ShieldAlert } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef } from "react";
 import { cn } from "@/lib/utils";
 
 type Campus = { id: string; name: string };
 type User = {
   id: string;
   name: string;
+  email?: string;
+  isAdmin?: boolean;
   campusId?: string;
   campus?: { id: string; name: string };
 };
@@ -18,28 +20,49 @@ type User = {
 export function Navbar({
   campuses,
   user,
+  pendingAdminNotifications = 0,
 }: {
-  campuses: Campus[];
+  campuses?: Campus[];
   user: User | null;
+  pendingAdminNotifications?: number;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const currentQuery = searchParams.get("q") || "";
 
   function updateSearch(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString());
-    if (value) {
-      params.set(key, value);
+    if (value.trim()) {
+      params.set(key, value.trim());
     } else {
       params.delete(key);
     }
     startTransition(() => {
       router.push(`/?${params.toString()}`);
     });
+  }
+
+  function handleSearchChange(value: string) {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = setTimeout(() => {
+      updateSearch("q", value);
+    }, 350);
+  }
+
+  function handleSearchKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter") {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+      updateSearch("q", (e.target as HTMLInputElement).value);
+    }
   }
 
   return (
@@ -86,17 +109,17 @@ export function Navbar({
                 type="text"
                 placeholder="Search items by title (e.g. cycle, kettle, HC Verma, drafter)..."
                 defaultValue={currentQuery}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  const timeout = setTimeout(() => updateSearch("q", value), 300);
-                  return () => clearTimeout(timeout);
-                }}
-                className="w-full rounded-lg border border-border bg-surface pl-9 pr-3 py-2 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                onChange={(e) => handleSearchChange(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
+                className="w-full rounded-lg border border-border bg-surface pl-9 pr-9 py-2 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all"
               />
+              {isPending && (
+                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-primary" />
+              )}
             </div>
 
             {/* Active Campus Indicator (All-campuses selection is strictly at registration) */}
-            {user?.campus ? (
+            {user?.campus && (
               <div
                 className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface border border-border text-xs font-semibold text-foreground shrink-0 shadow-xs"
                 title={`Your campus: ${user.campus.name}`}
@@ -104,15 +127,6 @@ export function Navbar({
                 <School className="h-3.5 w-3.5 text-primary shrink-0" />
                 <span className="truncate max-w-[180px]">{user.campus.name}</span>
               </div>
-            ) : (
-              <Link
-                href="/register"
-                className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-primary/10 border border-primary/20 text-xs font-semibold text-primary shrink-0 hover:bg-primary/20 transition-colors"
-                title="Campus selection happens at registration"
-              >
-                <School className="h-3.5 w-3.5 shrink-0" />
-                <span>Select Campus at Register</span>
-              </Link>
             )}
           </div>
 
@@ -121,6 +135,21 @@ export function Navbar({
             <ThemeToggle />
             {user ? (
               <>
+                {user.isAdmin && (
+                  <Link
+                    href="/admin"
+                    className="relative flex items-center gap-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 px-3 py-1.5 text-xs font-bold text-amber-700 dark:text-amber-400 hover:bg-amber-500/20 transition-all shadow-xs"
+                    title="Admin Dashboard & Campus Requests"
+                  >
+                    <ShieldAlert className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                    <span>Admin</span>
+                    {pendingAdminNotifications > 0 && (
+                      <span className="flex h-4 min-w-4 px-1 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white animate-pulse">
+                        {pendingAdminNotifications}
+                      </span>
+                    )}
+                  </Link>
+                )}
                 <Link
                   href="/listings/create"
                   className="flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-sm font-semibold text-white hover:bg-primary-hover transition-colors shadow-sm"
@@ -203,12 +232,13 @@ export function Navbar({
                 type="text"
                 placeholder="Search items by keyword..."
                 defaultValue={currentQuery}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setTimeout(() => updateSearch("q", value), 300);
-                }}
-                className="w-full rounded-lg border border-border bg-surface pl-10 pr-4 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                onChange={(e) => handleSearchChange(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
+                className="w-full rounded-lg border border-border bg-surface pl-10 pr-9 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all"
               />
+              {isPending && (
+                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-primary" />
+              )}
             </div>
 
             {/* User Campus Badge */}
@@ -243,6 +273,23 @@ export function Navbar({
 
               {user ? (
                 <>
+                  {user.isAdmin && (
+                    <Link
+                      href="/admin"
+                      className="flex items-center justify-between rounded-lg bg-amber-500/10 border border-amber-500/30 px-3 py-2 text-sm font-bold text-amber-700 dark:text-amber-400"
+                      onClick={() => setMobileOpen(false)}
+                    >
+                      <span className="flex items-center gap-2">
+                        <ShieldAlert className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                        Admin Dashboard
+                      </span>
+                      {pendingAdminNotifications > 0 && (
+                        <span className="flex h-5 min-w-5 px-1.5 items-center justify-center rounded-full bg-red-600 text-[11px] font-bold text-white">
+                          {pendingAdminNotifications}
+                        </span>
+                      )}
+                    </Link>
+                  )}
                   <Link
                     href="/listings/create"
                     className="flex items-center gap-2.5 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white"

@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { getUserListings } from "@/server/queries";
-import { formatPrice } from "@/lib/utils";
+import { formatPrice, normalizeImageUrl } from "@/lib/utils";
 import { ListingActionControls } from "./listing-actions-controls";
 import { Package, Plus, Heart, Eye } from "lucide-react";
 
@@ -81,7 +81,7 @@ export default async function MyListingsPage() {
               <div className="flex items-center gap-4">
                 <div className="relative h-16 w-16 sm:h-20 sm:w-20 rounded-lg overflow-hidden bg-muted shrink-0">
                   <Image
-                    src={item.imageUrl}
+                    src={normalizeImageUrl(item.imageUrl)}
                     alt={item.title}
                     fill
                     className="object-cover"

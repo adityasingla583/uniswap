@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Heart, MapPin } from "lucide-react";
-import { cn, formatPrice } from "@/lib/utils";
+import { cn, formatPrice, normalizeImageUrl } from "@/lib/utils";
 import { useOptimistic, useTransition } from "react";
 import { toggleFavorite } from "@/server/actions";
 
@@ -94,7 +94,7 @@ export function ListingCard({
       {/* Image */}
       <div className="relative aspect-[4/3] overflow-hidden bg-muted">
         <Image
-          src={imageUrl}
+          src={normalizeImageUrl(imageUrl)}
           alt={title}
           fill
           className="object-cover transition-transform group-hover:scale-105"

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import { requestOtp, registerWithEmailOtp } from "@/server/otp-actions";
+import { requestPhoneOtp, registerWithPhoneVerification } from "@/server/phone-actions";
 import { OtpInput } from "@/app/components/otp-input";
 import {
   UserPlus,
@@ -10,13 +10,13 @@ import {
   Mail,
   User,
   Home,
+  Phone,
   Loader2,
   ArrowRight,
   ArrowLeft,
-  KeyRound,
   ShieldCheck,
-  Send,
-  Sparkles,
+  Smartphone,
+  RotateCw,
 } from "lucide-react";
 import { CampusCombobox } from "@/app/components/campus-combobox";
 
@@ -26,6 +26,9 @@ export function RegisterForm({ campuses }: { campuses: Campus[] }) {
   const [step, setStep] = useState<"DETAILS" | "OTP">("DETAILS");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [formattedPhone, setFormattedPhone] = useState("");
+  const [devOtpHint, setDevOtpHint] = useState<string | null>(null);
   const [password, setPassword] = useState("");
   const [dormZone, setDormZone] = useState("");
   const [selectedCampusId, setSelectedCampusId] = useState("");
@@ -36,6 +39,7 @@ export function RegisterForm({ campuses }: { campuses: Campus[] }) {
   function handleSendOtp(e: React.FormEvent) {
     e.preventDefault();
     setErrorMessage("");
+    setDevOtpHint(null);
 
     if (!name.trim()) {
       setErrorMessage("Please enter your full name.");
@@ -43,6 +47,11 @@ export function RegisterForm({ campuses }: { campuses: Campus[] }) {
     }
     if (!email.trim() || !email.includes("@")) {
       setErrorMessage("Please enter a valid university email address.");
+      return;
+    }
+    const cleanPhoneDigits = phone.replace(/\D/g, "");
+    if (!cleanPhoneDigits || cleanPhoneDigits.length < 10) {
+      setErrorMessage("Please enter a valid 10-digit Indian mobile number.");
       return;
     }
     if (!selectedCampusId) {
@@ -55,10 +64,14 @@ export function RegisterForm({ campuses }: { campuses: Campus[] }) {
     }
 
     startTransition(async () => {
-      const res = await requestOtp(email, "REGISTER");
+      const res = await requestPhoneOtp(phone, email);
       if (res.error) {
         setErrorMessage(res.error);
       } else {
+        setFormattedPhone(res.formattedPhone || phone);
+        if (res.devCode) {
+          setDevOtpHint(res.devCode);
+        }
         setStep("OTP");
       }
     });
@@ -73,10 +86,11 @@ export function RegisterForm({ campuses }: { campuses: Campus[] }) {
 
     setErrorMessage("");
     startTransition(async () => {
-      const res = await registerWithEmailOtp(
+      const res = await registerWithPhoneVerification(
         {
           name,
           email,
+          phone,
           password,
           campusId: selectedCampusId,
           dormZone: dormZone.trim() || undefined,
@@ -93,9 +107,11 @@ export function RegisterForm({ campuses }: { campuses: Campus[] }) {
   function handleResendOtp() {
     setErrorMessage("");
     startTransition(async () => {
-      const res = await requestOtp(email, "REGISTER");
+      const res = await requestPhoneOtp(phone, email);
       if (res.error) {
         setErrorMessage(res.error);
+      } else if (res.devCode) {
+        setDevOtpHint(res.devCode);
       }
     });
   }
@@ -130,9 +146,20 @@ export function RegisterForm({ campuses }: { campuses: Campus[] }) {
           </h2>
           <p className="text-xs sm:text-sm text-muted-foreground">
             {step === "DETAILS"
-              ? "Sign up with your campus email to buy, sell & exchange locally"
-              : `Verify your college email (${email}) to activate account`}
+              ? "Verified campus marketplace — strictly 1 account per mobile number"
+              : `Verify SMS code dispatched to ${formattedPhone || phone}`}
           </p>
+        </div>
+
+        {/* Anti-Sybil Trust Highlight */}
+        <div className="flex items-start gap-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-3 text-xs text-emerald-800 dark:text-emerald-300">
+          <ShieldCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+          <div className="space-y-0.5">
+            <span className="font-semibold">Anti-Sybil Trust Guarantee</span>
+            <p className="text-[11px] leading-relaxed opacity-90">
+              To eliminate bots, scam listings, and duplicate accounts, each student account is strictly bound to a single verified Indian phone number.
+            </p>
+          </div>
         </div>
 
         {errorMessage && (
@@ -156,6 +183,30 @@ export function RegisterForm({ campuses }: { campuses: Campus[] }) {
                   className="w-full rounded-lg border border-border bg-surface pl-10 pr-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
               </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-foreground">
+                Mobile Number (Anti-Sybil Verification)
+              </label>
+              <div className="relative flex rounded-lg border border-border bg-surface focus-within:ring-2 focus-within:ring-primary/40 overflow-hidden">
+                <div className="flex items-center gap-1 bg-muted px-3 border-r border-border text-xs font-semibold text-foreground select-none">
+                  <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span>+91</span>
+                </div>
+                <input
+                  type="tel"
+                  required
+                  maxLength={10}
+                  value={phone.replace(/^\+91/, "").replace(/\D/g, "")}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="98765 43210"
+                  className="w-full bg-transparent px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+                />
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                10-digit Indian mobile. An SMS verification code will be dispatched.
+              </p>
             </div>
 
             <div className="space-y-1">
@@ -184,7 +235,7 @@ export function RegisterForm({ campuses }: { campuses: Campus[] }) {
                 campuses={campuses}
                 value={selectedCampusId}
                 onChange={setSelectedCampusId}
-                placeholder="Search all JoSAA IITs, NITs, IIITs, GFTIs (198+ campuses)..."
+                placeholder="Search all JoSAA IITs, NITs, IIITs, GFTIs (230+ campuses)..."
               />
               <p className="text-[11px] text-muted-foreground">
                 Your campus locks your primary feed to hyper-local items.
@@ -230,23 +281,24 @@ export function RegisterForm({ campuses }: { campuses: Campus[] }) {
               {isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Sending Nodemailer Verification Code...
+                  Checking Phone & Sending SMS...
                 </>
               ) : (
                 <>
-                  Verify Email & Continue
+                  Verify Phone via SMS & Continue
                   <ArrowRight className="h-4 w-4" />
                 </>
               )}
             </button>
           </form>
         ) : (
-          /* Step 2: Email OTP Verification */
+          /* Step 2: SMS OTP Verification */
           <div className="space-y-4 animate-in fade-in-0 slide-in-from-bottom-2">
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <label className="text-xs font-semibold text-foreground">
-                  Enter 6-Digit Email Code
+                <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                  <Smartphone className="h-4 w-4 text-primary" />
+                  Enter 6-Digit SMS Code
                 </label>
                 <button
                   type="button"
@@ -256,6 +308,14 @@ export function RegisterForm({ campuses }: { campuses: Campus[] }) {
                   <ArrowLeft className="h-3 w-3" /> Edit Info
                 </button>
               </div>
+
+              {/* Dev mode instant code helper */}
+              {devOtpHint && (
+                <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-2.5 text-xs text-amber-700 dark:text-amber-300">
+                  <span className="font-semibold">[Dev / Test Code]:</span> Your 6-digit OTP is{" "}
+                  <strong className="tracking-widest font-mono text-sm">{devOtpHint}</strong>
+                </div>
+              )}
 
               {/* 6 Individual Digit Boxes */}
               <OtpInput
@@ -273,8 +333,8 @@ export function RegisterForm({ campuses }: { campuses: Campus[] }) {
               />
 
               <p className="text-[11px] text-muted-foreground text-center">
-                We sent a 6-digit verification code to{" "}
-                <strong className="text-foreground">{email}</strong>.
+                Dispatched SMS OTP to{" "}
+                <strong className="text-foreground">{formattedPhone || `+91 ${phone}`}</strong>.
               </p>
             </div>
 
@@ -287,11 +347,11 @@ export function RegisterForm({ campuses }: { campuses: Campus[] }) {
               {isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Creating Verified Account...
+                  Verifying Code & Activating Account...
                 </>
               ) : (
                 <>
-                  Complete Registration
+                  Complete Registration & Verify Phone
                   <ArrowRight className="h-4 w-4" />
                 </>
               )}
@@ -302,9 +362,10 @@ export function RegisterForm({ campuses }: { campuses: Campus[] }) {
                 type="button"
                 onClick={handleResendOtp}
                 disabled={isPending}
-                className="text-xs text-muted-foreground hover:text-foreground underline"
+                className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1 underline"
               >
-                Didn&apos;t receive code? Resend email
+                <RotateCw className="h-3 w-3" />
+                Didn&apos;t receive SMS? Resend code
               </button>
             </div>
           </div>
