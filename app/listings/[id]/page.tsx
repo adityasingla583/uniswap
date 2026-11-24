@@ -125,7 +125,16 @@ export default async function ListingDetailPage({ params }: PageProps) {
                 <div>
                   <p className="text-sm font-semibold text-foreground flex items-center gap-1.5">
                     {listing.user.name}
-                    {listing.user.phoneVerified && (
+                    {listing.user.isVerified && (
+                      <span
+                        className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-bold text-blue-600 dark:text-blue-400 border border-blue-500/20 shadow-xs"
+                        title="Verified Student Credibility Badge"
+                      >
+                        <ShieldCheck className="h-3 w-3 fill-blue-500/20" />
+                        Verified Student
+                      </span>
+                    )}
+                    {listing.user.phoneVerified && !listing.user.isVerified && (
                       <span
                         className="inline-flex items-center gap-0.5 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
                         title="Anti-Sybil: Verified 1-account-per-phone number"
@@ -141,12 +150,18 @@ export default async function ListingDetailPage({ params }: PageProps) {
                 </div>
               </div>
               <div className="text-right">
-                <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                  <ShieldCheck className="h-3.5 w-3.5" />
-                  Verified Student
-                </span>
+                {listing.user.isVerified ? (
+                  <span className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 dark:text-blue-400">
+                    <ShieldCheck className="h-3.5 w-3.5" />
+                    Verified Student
+                  </span>
+                ) : (
+                  <span className="text-xs font-semibold text-muted-foreground">
+                    Campus Member
+                  </span>
+                )}
                 <p className="text-[10px] text-muted-foreground">
-                  Anti-Sybil Protected
+                  {listing.user.phoneVerified ? "Anti-Sybil Protected" : "Campus Registered"}
                 </p>
               </div>
             </div>

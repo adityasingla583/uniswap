@@ -132,7 +132,7 @@ export async function getListingById(id: string) {
     where: { id },
     include: {
       campus: true,
-      user: { select: { id: true, name: true, email: true, phoneVerified: true, campus: true } },
+      user: { select: { id: true, name: true, email: true, phoneVerified: true, isVerified: true, campus: true } },
       _count: { select: { favorites: true } },
     },
   });

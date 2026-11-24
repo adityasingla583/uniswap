@@ -28,6 +28,8 @@ export function RequestCampusModal({
   prefillName = "",
 }: RequestCampusModalProps) {
   const [name, setName] = useState(prefillName);
+  const [website, setWebsite] = useState("");
+  const [institutionType, setInstitutionType] = useState("COLLEGE_UNIVERSITY");
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
   const [domain, setDomain] = useState("");
@@ -60,6 +62,8 @@ export function RequestCampusModal({
 
       const res = await submitCampusRequest({
         name,
+        website,
+        institutionType,
         city,
         state,
         domain,
@@ -78,6 +82,7 @@ export function RequestCampusModal({
         setTimeout(() => {
           // Reset and close after a short delay
           setName("");
+          setWebsite("");
           setCity("");
           setState("");
           setDomain("");
@@ -158,6 +163,23 @@ export function RequestCampusModal({
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. BITS Pilani, Goa Campus or DTU Delhi"
+                  className="w-full rounded-lg border border-border bg-surface pl-9 pr-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                />
+              </div>
+            </div>
+
+            {/* Official Website */}
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-foreground">
+                Official Website (e.g. https://iiitkota.ac.in)
+              </label>
+              <div className="relative">
+                <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <input
+                  type="text"
+                  value={website}
+                  onChange={(e) => setWebsite(e.target.value)}
+                  placeholder="https://iiitkota.ac.in"
                   className="w-full rounded-lg border border-border bg-surface pl-9 pr-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
               </div>

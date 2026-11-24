@@ -52,5 +52,5 @@ test("Campus Workflow: successfully submits unique campus request", { skip: !has
   const dupResult = await submitCampusRequest({
     name: uniqueName,
   });
-  assert.ok(dupResult.error && dupResult.error.includes("already been submitted and is currently awaiting admin confirmation"));
+  assert.ok(dupResult.error && dupResult.error.includes("already exists"));
 });

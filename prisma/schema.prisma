@@ -33,6 +33,8 @@ model Campus {
   latitude  Float
   longitude Float
   domain    String?
+  website   String?
+  aliases   String[]  @default([])
   users     User[]
   listings  Listing[]
 }
@@ -46,16 +48,23 @@ model User {
   phone         String?    @unique
   phoneVerified Boolean    @default(false)
   isAdmin       Boolean    @default(false)
+  isPremium     Boolean    @default(false)
+  premiumUntil  DateTime?
+  isVerified    Boolean    @default(false)
+  verifiedAt    DateTime?
   campusId      String
   campus        Campus     @relation(fields: [campusId], references: [id], onDelete: Cascade)
   dormZone      String?
   createdAt     DateTime   @default(now())
 
-  listings            Listing[]
-  favorites           Favorite[]
-  buyerConversations  Conversation[] @relation("BuyerConversations")
-  sellerConversations Conversation[] @relation("SellerConversations")
-  sentMessages        Message[]
+  listings             Listing[]
+  favorites            Favorite[]
+  buyerConversations   Conversation[]         @relation("BuyerConversations")
+  sellerConversations  Conversation[]         @relation("SellerConversations")
+  sentMessages         Message[]
+  dailyUsages          DailyMessageUsage[]
+  payments             PaymentRecord[]
+  verificationRequests VerificationRequest[]
 }
 
 model Listing {
@@ -139,6 +148,7 @@ model Conversation {
 
 enum CampusRequestStatus {
   PENDING
+  UNDER_REVIEW
   APPROVED
   REJECTED
 }
@@ -151,16 +161,24 @@ model CampusRequest {
   latitude        Float
   longitude       Float
   domain          String?
+  website         String?
+  institutionType String?
   requesterName   String?
   requesterEmail  String?
   requesterPhone  String?
   note            String?
   status          CampusRequestStatus @default(PENDING)
   rejectionReason String?
+  aiRecommendation String?            // "APPROVE" | "MANUAL_REVIEW" | "REJECT"
+  aiConfidence    Float?              // 0 to 100
+  aiReasoning     String?
+  aiEvidence      String?             // JSON string of multi-point inspection
+  aiCheckedAt     DateTime?
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
 
   @@index([status, createdAt])
+  @@index([domain])
 }
 
 model Message {
@@ -176,4 +194,89 @@ model Message {
   createdAt      DateTime     @default(now())
 
   @@index([conversationId, createdAt])
+}
+
+model DailyMessageUsage {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      String   // "YYYY-MM-DD"
+  count     Int      @default(0)
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum PaymentPurpose {
+  IDENTITY_VERIFICATION
+  PREMIUM_SUBSCRIPTION
+}
+
+model PaymentRecord {
+  id             String         @id @default(cuid())
+  userId         String
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orderId        String         @unique
+  paymentId      String?        @unique
+  amount         Float          @default(10.0) // ₹10
+  currency       String         @default("INR")
+  status         PaymentStatus  @default(PENDING)
+  purpose        PaymentPurpose @default(IDENTITY_VERIFICATION)
+  idempotencyKey String?        @unique
+  metadata       String?        // JSON metadata
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  verificationRequests VerificationRequest[]
+
+  @@index([userId, status])
+  @@index([orderId])
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model VerificationRequest {
+  id              String             @id @default(cuid())
+  userId          String
+  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  paymentId       String?
+  payment         PaymentRecord?     @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  status          VerificationStatus @default(PENDING)
+  studentIdNumber String?
+  collegeEmail    String?
+  documentUrl     String?
+  rejectionReason String?
+  reviewedBy      String?
+  verifiedAt      DateTime?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@index([userId, status])
+  @@index([status])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  adminId    String
+  adminEmail String?
+  action     String   // e.g. "APPROVE_CAMPUS", "REJECT_CAMPUS", "APPROVE_VERIFICATION", "REJECT_VERIFICATION", "MERGE_CAMPUS"
+  targetType String   // "CampusRequest", "VerificationRequest", "Campus", "User"
+  targetId   String
+  details    String?  // JSON string
+  createdAt  DateTime @default(now())
+
+  @@index([adminId, createdAt])
+  @@index([targetType, targetId])
 }

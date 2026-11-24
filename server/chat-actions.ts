@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { reserveMessageQuotaAtomic, refundMessageQuotaAtomic } from "./freemium-actions";
 
 export async function startChatWithSeller(listingId: string) {
   const session = await getSession();
@@ -81,27 +82,47 @@ export async function sendMessageAsync(conversationId: string, content: string) 
     return { error: "Not authorized to send messages in this conversation" };
   }
 
-  const message = await prisma.message.create({
-    data: {
-      conversationId,
-      senderId: session.userId,
-      content: trimmed,
-    },
-    include: {
-      sender: { select: { id: true, name: true } },
-    },
-  });
+  // Atomically check and reserve message quota
+  const quota = await reserveMessageQuotaAtomic(session.userId);
+  if (!quota.allowed) {
+    return {
+      error: "DAILY_LIMIT_REACHED",
+      limit: 100,
+      used: quota.used,
+      remaining: 0,
+      message: "Daily message limit reached (100 messages/day). Upgrade to Premium for unlimited messaging.",
+      quota,
+    };
+  }
 
-  await prisma.conversation.update({
-    where: { id: conversationId },
-    data: { updatedAt: new Date() },
-  });
+  let message;
+  try {
+    message = await prisma.message.create({
+      data: {
+        conversationId,
+        senderId: session.userId,
+        content: trimmed,
+      },
+      include: {
+        sender: { select: { id: true, name: true } },
+      },
+    });
+
+    await prisma.conversation.update({
+      where: { id: conversationId },
+      data: { updatedAt: new Date() },
+    });
+  } catch (err) {
+    // If message creation fails, refund quota so only accepted messages are counted
+    await refundMessageQuotaAtomic(session.userId);
+    throw err;
+  }
 
   // Only revalidate the chats inbox summary list so it reflects the last message when navigating back.
   // DO NOT revalidate `/chats/${conversationId}` because that forces Next.js to re-render the active conversation page from the server!
   revalidatePath("/chats");
 
-  return { success: true, message };
+  return { success: true, message, quota };
 }
 
 export async function fetchMessagesAsync(
@@ -178,8 +199,8 @@ export async function getConversationDetails(conversationId: string) {
   const conversation = await prisma.conversation.findUnique({
     where: { id: conversationId },
     include: {
-      buyer: { select: { id: true, name: true, email: true, campus: true, dormZone: true } },
-      seller: { select: { id: true, name: true, email: true, campus: true, dormZone: true } },
+      buyer: { select: { id: true, name: true, email: true, isVerified: true, campus: true, dormZone: true } },
+      seller: { select: { id: true, name: true, email: true, isVerified: true, campus: true, dormZone: true } },
       listing: {
         include: { campus: true },
       },

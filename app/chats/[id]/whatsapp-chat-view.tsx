@@ -13,6 +13,10 @@ import {
   School,
   ShieldCheck,
   RotateCw,
+  Zap,
+  Sparkles,
+  AlertCircle,
+  X,
 } from "lucide-react";
 
 export type Message = {
@@ -28,9 +32,17 @@ type ChatProps = {
   conversationId: string;
   initialMessages: Message[];
   currentUserId: string;
+  initialQuota?: {
+    isPremium: boolean;
+    used: number;
+    limit: number;
+    remaining: number;
+    date: string;
+  };
   otherParticipant: {
     id: string;
     name: string;
+    isVerified?: boolean;
     campus?: { name: string } | null;
     dormZone?: string | null;
   };
@@ -153,9 +165,16 @@ const ChatHeader = memo(function ChatHeader({
             <h2 className="text-sm sm:text-base font-bold text-foreground">
               {otherParticipant.name}
             </h2>
-            <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-500/20">
-              Verified Student
-            </span>
+            {otherParticipant.isVerified ? (
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold border border-blue-500/20 flex items-center gap-1 shadow-xs">
+                <ShieldCheck className="h-3 w-3 fill-blue-500/20" />
+                Verified Student
+              </span>
+            ) : (
+              <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-muted text-muted-foreground font-semibold">
+                Campus Student
+              </span>
+            )}
           </div>
           <p className="text-xs text-muted-foreground flex items-center gap-1">
             <School className="h-3 w-3" />
@@ -284,11 +303,24 @@ export function WhatsAppChatView({
   conversationId,
   initialMessages,
   currentUserId,
+  initialQuota,
   otherParticipant,
   listing,
 }: ChatProps) {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [quota, setQuota] = useState(
+    initialQuota || {
+      isPremium: false,
+      used: 0,
+      limit: 100,
+      remaining: 100,
+      date: "",
+    }
+  );
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [quotaError, setQuotaError] = useState<string | null>(null);
+
   const latestMessageIdRef = useRef<string | undefined>(
     initialMessages[initialMessages.length - 1]?.id
   );
@@ -353,6 +385,12 @@ export function WhatsAppChatView({
   // Optimistically appends the new message into messages list.
   const handleSendMessage = useCallback(
     async (content: string) => {
+      if (!quota.isPremium && quota.remaining <= 0) {
+        setQuotaError("You have reached your daily limit of 100 messages. Upgrade to Premium for unlimited messaging.");
+        setShowUpgradeModal(true);
+        return;
+      }
+
       const tempId = `temp-${Date.now()}`;
       const optimisticMsg: Message = {
         id: tempId,
@@ -366,20 +404,37 @@ export function WhatsAppChatView({
 
       try {
         const res = await sendMessageAsync(conversationId, content);
+        if (res.error === "DAILY_LIMIT_REACHED") {
+          // Revert optimistic message
+          setMessages((prev) => prev.filter((m) => m.id !== tempId));
+          setQuotaError(res.message || "Daily message limit reached (100 messages/day). Upgrade to Premium for unlimited messaging.");
+          if (res.quota) {
+            setQuota(res.quota);
+          }
+          setShowUpgradeModal(true);
+          return;
+        }
+
         if (res.success && res.message) {
           setMessages((prev) =>
             prev.map((m) => (m.id === tempId ? res.message : m))
           );
+          if (res.quota) {
+            setQuota(res.quota);
+          }
+          setQuotaError(null);
         }
       } catch (err) {
         console.error("Failed to send message:", err);
       }
     },
-    [conversationId, currentUserId]
+    [conversationId, currentUserId, quota]
   );
 
+  const isLimitReached = !quota.isPremium && quota.remaining <= 0;
+
   return (
-    <div className="flex flex-col h-[82vh] max-w-4xl mx-auto rounded-2xl border border-border bg-card shadow-lg overflow-hidden">
+    <div className="flex flex-col h-[82vh] max-w-4xl mx-auto rounded-2xl border border-border bg-card shadow-lg overflow-hidden relative">
       {/* ── Chat Header (Memoized - won't re-render on new messages) ── */}
       <ChatHeader
         otherParticipant={otherParticipant}
@@ -397,8 +452,135 @@ export function WhatsAppChatView({
         otherName={otherParticipant.name}
       />
 
-      {/* ── Bottom Input Bar (Memoized with useChatInput hook - won't re-render on new messages) ── */}
-      <ChatInputBar onSendMessage={handleSendMessage} />
+      {/* ── Freemium Quota Bar ── */}
+      <div className="bg-surface/90 border-t border-border px-4 py-1.5 flex items-center justify-between text-xs text-muted-foreground shrink-0">
+        {quota.isPremium ? (
+          <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-semibold text-[11px]">
+            <Sparkles className="h-3.5 w-3.5" />
+            Premium Member: Unlimited messaging active
+          </span>
+        ) : (
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-2">
+              <span
+                className={`inline-block h-2 w-2 rounded-full ${
+                  isLimitReached ? "bg-rose-500 animate-ping" : "bg-emerald-500 animate-pulse"
+                }`}
+              />
+              <span>
+                Daily Quota: <strong className="text-foreground">{quota.used}</strong> / {quota.limit} used{" "}
+                <span className={isLimitReached ? "text-rose-500 font-bold" : "text-muted-foreground"}>
+                  ({quota.remaining} remaining today)
+                </span>
+              </span>
+            </div>
+
+            <Link
+              href="/profile#premium"
+              className="font-bold text-primary hover:underline flex items-center gap-1 text-[11px] bg-primary/10 px-2 py-0.5 rounded-full"
+            >
+              <Zap className="h-3 w-3" />
+              <span>Get Unlimited</span>
+            </Link>
+          </div>
+        )}
+      </div>
+
+      {/* ── Limit Reached Banner ── */}
+      {isLimitReached && (
+        <div className="bg-rose-50 dark:bg-rose-950/40 border-t border-rose-200 dark:border-rose-900/60 p-3 flex items-center justify-between gap-3 text-xs text-rose-800 dark:text-rose-200">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 shrink-0 text-rose-600" />
+            <span>Daily free limit of 100 messages reached. Counter resets at midnight.</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowUpgradeModal(true)}
+            className="px-3 py-1 bg-rose-600 text-white font-semibold rounded-lg hover:bg-rose-700 transition-colors shrink-0 shadow-xs"
+          >
+            Upgrade to Premium
+          </button>
+        </div>
+      )}
+
+      {/* ── Bottom Input Bar ── */}
+      <ChatInputBar
+        onSendMessage={handleSendMessage}
+        disabled={isLimitReached}
+        placeholder={
+          isLimitReached
+            ? "Daily limit reached (100/100). Upgrade to Premium to send more messages..."
+            : "Type a message (press Enter to send)..."
+        }
+      />
+
+      {/* ── Upgrade to Premium Modal ── */}
+      {showUpgradeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in-0">
+          <div className="bg-card border border-border w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-4 relative">
+            <button
+              onClick={() => setShowUpgradeModal(false)}
+              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
+                <Sparkles className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-foreground">Upgrade to Local Loop Premium</h3>
+                <p className="text-xs text-muted-foreground">Unlock unlimited campus messaging</p>
+              </div>
+            </div>
+
+            <div className="rounded-xl bg-muted/30 p-3.5 space-y-2 text-xs">
+              <div className="flex items-center gap-2 text-foreground font-semibold">
+                <Zap className="h-4 w-4 text-amber-500" />
+                <span>Unlimited 1-on-1 Negotiations & Chats</span>
+              </div>
+              <div className="flex items-center gap-2 text-foreground font-semibold">
+                <Zap className="h-4 w-4 text-amber-500" />
+                <span>Priority Campus Buyer/Seller Notifications</span>
+              </div>
+              <div className="flex items-center gap-2 text-foreground font-semibold">
+                <Zap className="h-4 w-4 text-amber-500" />
+                <span>Verified Buyer Credibility Badge</span>
+              </div>
+            </div>
+
+            {quotaError && (
+              <p className="text-xs text-rose-500 font-medium bg-rose-500/10 p-2 rounded-lg">
+                {quotaError}
+              </p>
+            )}
+
+            <div className="flex items-center justify-between pt-2">
+              <div>
+                <span className="text-xl font-extrabold text-foreground">₹49</span>
+                <span className="text-xs text-muted-foreground"> / month</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowUpgradeModal(false)}
+                  className="px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground"
+                >
+                  Maybe Later
+                </button>
+                <Link
+                  href="/profile#premium"
+                  onClick={() => setShowUpgradeModal(false)}
+                  className="px-4 py-2 bg-primary text-primary-foreground text-xs font-bold rounded-xl hover:bg-primary/90 transition-colors shadow-xs"
+                >
+                  Go to Upgrade
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

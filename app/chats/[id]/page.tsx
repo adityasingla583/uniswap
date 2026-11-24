@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { getConversationDetails, fetchMessagesAsync } from "@/server/chat-actions";
+import { getUserMessageQuota } from "@/server/freemium-actions";
 import { getSession } from "@/lib/auth";
 import { WhatsAppChatView } from "./whatsapp-chat-view";
 
@@ -25,7 +26,10 @@ export default async function ConversationPage({ params }: PageProps) {
     notFound();
   }
 
-  const messagesResult = await fetchMessagesAsync(id);
+  const [messagesResult, quota] = await Promise.all([
+    fetchMessagesAsync(id),
+    getUserMessageQuota(session.userId),
+  ]);
 
   return (
     <WhatsAppChatView
@@ -34,6 +38,7 @@ export default async function ConversationPage({ params }: PageProps) {
       currentUserId={session.userId}
       otherParticipant={details.otherParticipant}
       listing={details.conversation.listing}
+      initialQuota={quota}
     />
   );
 }

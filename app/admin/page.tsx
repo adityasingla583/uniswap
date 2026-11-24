@@ -29,7 +29,7 @@ export default async function AdminPage() {
     redirect("/");
   }
 
-  const { metrics, pendingRequests, recentRequests } = data;
+  const { metrics, requests, verifications, auditLogs, campuses } = data;
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -63,108 +63,132 @@ export default async function AdminPage() {
               </span>
             </div>
             <p className="text-xs sm:text-sm text-muted-foreground">
-              Verify pending institute requests, monitor anti-sybil accounts, and oversee campus marketplace activity.
+              Review AI website verifications, approve paid student credibility badges, resolve duplicates, and inspect audit logs.
             </p>
           </div>
         </div>
 
         {/* Notifications Alert Pill */}
-        {metrics.pendingCount > 0 && (
+        {(metrics.pendingCampusCount > 0 || metrics.pendingVerificationCount > 0) && (
           <div className="flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 shrink-0 animate-in fade-in-0">
             <Bell className="h-4 w-4 animate-bounce shrink-0" />
             <div className="text-xs">
-              <span className="font-bold">{metrics.pendingCount} New Request{metrics.pendingCount > 1 ? "s" : ""}</span>
-              <p className="text-[10px] opacity-80">Pending your confirmation</p>
+              <span className="font-bold">
+                {metrics.pendingCampusCount + metrics.pendingVerificationCount} Pending Action{metrics.pendingCampusCount + metrics.pendingVerificationCount > 1 ? "s" : ""}
+              </span>
+              <p className="text-[10px] opacity-80">
+                {metrics.pendingCampusCount} campuses, {metrics.pendingVerificationCount} student IDs
+              </p>
             </div>
           </div>
         )}
       </div>
 
       {/* Overview Stat Metrics Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         {/* Metric 1 */}
-        <div className="p-4 sm:p-5 rounded-2xl border border-border bg-card shadow-xs space-y-2">
+        <div className="p-4 rounded-2xl border border-border bg-card shadow-xs space-y-2">
           <div className="flex items-center justify-between text-muted-foreground">
-            <span className="text-xs font-semibold">Active Campuses</span>
+            <span className="text-xs font-semibold">Campuses</span>
             <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
               <School className="h-4 w-4" />
             </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-black text-foreground">
+          <div className="text-2xl font-black text-foreground">
             {metrics.totalCampuses}
           </div>
-          <p className="text-[11px] text-muted-foreground">IITs, NITs, IIITs & universities</p>
+          <p className="text-[10px] text-muted-foreground">Active institutions</p>
         </div>
 
         {/* Metric 2 */}
-        <div className="p-4 sm:p-5 rounded-2xl border border-border bg-card shadow-xs space-y-2">
+        <div className="p-4 rounded-2xl border border-border bg-card shadow-xs space-y-2">
           <div className="flex items-center justify-between text-muted-foreground">
-            <span className="text-xs font-semibold">Verified Students</span>
+            <span className="text-xs font-semibold">Registered Users</span>
             <div className="h-8 w-8 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
               <Users className="h-4 w-4" />
             </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-black text-foreground">
+          <div className="text-2xl font-black text-foreground">
             {metrics.totalUsers}
           </div>
-          <p className="text-[11px] text-muted-foreground">Anti-Sybil protected accounts</p>
+          <p className="text-[10px] text-muted-foreground">Student accounts</p>
         </div>
 
         {/* Metric 3 */}
-        <div className="p-4 sm:p-5 rounded-2xl border border-border bg-card shadow-xs space-y-2">
+        <div className="p-4 rounded-2xl border border-border bg-card shadow-xs space-y-2">
           <div className="flex items-center justify-between text-muted-foreground">
-            <span className="text-xs font-semibold">Total Listings</span>
+            <span className="text-xs font-semibold">Listings</span>
             <div className="h-8 w-8 rounded-lg bg-blue-500/10 text-blue-600 flex items-center justify-center">
               <Package className="h-4 w-4" />
             </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-black text-foreground">
+          <div className="text-2xl font-black text-foreground">
             {metrics.totalListings}
           </div>
-          <p className="text-[11px] text-muted-foreground">P2P items currently listed</p>
+          <p className="text-[10px] text-muted-foreground">Active items</p>
         </div>
 
-        {/* Metric 4 */}
+        {/* Metric 4: Campus requests */}
         <div
-          className={`p-4 sm:p-5 rounded-2xl border shadow-xs space-y-2 ${
-            metrics.pendingCount > 0
+          className={`p-4 rounded-2xl border shadow-xs space-y-2 ${
+            metrics.pendingCampusCount > 0
               ? "border-amber-500/50 bg-amber-500/5"
               : "border-border bg-card"
           }`}
         >
           <div className="flex items-center justify-between text-muted-foreground">
-            <span className="text-xs font-semibold">Pending Requests</span>
+            <span className="text-xs font-semibold">Campus Queue</span>
             <div
               className={`h-8 w-8 rounded-lg flex items-center justify-center ${
-                metrics.pendingCount > 0
+                metrics.pendingCampusCount > 0
                   ? "bg-amber-500 text-white font-bold"
                   : "bg-muted text-muted-foreground"
               }`}
             >
-              <Bell className="h-4 w-4" />
+              <School className="h-4 w-4" />
             </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-black text-foreground">
-            {metrics.pendingCount}
+          <div className="text-2xl font-black text-foreground">
+            {metrics.pendingCampusCount}
           </div>
-          <p className="text-[11px] text-muted-foreground">Awaiting admin review</p>
+          <p className="text-[10px] text-muted-foreground">Pending review</p>
+        </div>
+
+        {/* Metric 5: Paid student verifications */}
+        <div
+          className={`p-4 rounded-2xl border shadow-xs space-y-2 ${
+            metrics.pendingVerificationCount > 0
+              ? "border-emerald-500/50 bg-emerald-500/5"
+              : "border-border bg-card"
+          }`}
+        >
+          <div className="flex items-center justify-between text-muted-foreground">
+            <span className="text-xs font-semibold">Paid Verifications</span>
+            <div
+              className={`h-8 w-8 rounded-lg flex items-center justify-center ${
+                metrics.pendingVerificationCount > 0
+                  ? "bg-emerald-600 text-white font-bold"
+                  : "bg-muted text-muted-foreground"
+              }`}
+            >
+              <CheckCircle2 className="h-4 w-4" />
+            </div>
+          </div>
+          <div className="text-2xl font-black text-foreground">
+            {metrics.pendingVerificationCount}
+          </div>
+          <p className="text-[10px] text-muted-foreground">₹10 paid student IDs</p>
         </div>
       </div>
 
-      {/* Campus Approvals & Verification Manager */}
+      {/* Main Admin Management Workspace */}
       <div className="rounded-3xl border border-border bg-card p-6 shadow-xs space-y-4">
-        <div>
-          <h2 className="text-lg font-bold text-foreground">
-            Campus Verification & Confirmation Queue
-          </h2>
-          <p className="text-xs text-muted-foreground">
-            When a student requests an institute not currently on Local Loop, review their coordinates and confirm to activate it across all search filters and registration.
-          </p>
-        </div>
-
         <AdminCampusManager
-          initialPending={pendingRequests}
-          initialRecent={recentRequests}
+          initialRequests={requests || []}
+          initialVerifications={verifications || []}
+          initialAuditLogs={auditLogs || []}
+          initialCampuses={campuses || []}
+          adminUser={{ id: auth.user.id, email: auth.user.email }}
         />
       </div>
     </div>

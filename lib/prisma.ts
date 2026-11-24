@@ -4,7 +4,7 @@ import { Pool } from "pg";
 
 const connectionString = process.env.DATABASE_URL;
 
-const SCHEMA_VERSION = "v8-admin-campus-requests-2026-11-23";
+const SCHEMA_VERSION = "v9-freemium-verification-2026-11-24";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -31,7 +31,8 @@ const pool =
     connectionString,
     max: 10,
     idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 5000,
+    connectionTimeoutMillis: 20000,
+    ssl: connectionString?.includes("supabase.co") ? { rejectUnauthorized: false } : undefined,
     keepAlive: true,
   });
 const adapter = new PrismaPg(pool);

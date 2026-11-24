@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { Search, Plus, Heart, Package, LogOut, LogIn, Menu, X, Home, School, MessageCircle, Loader2, ShieldAlert } from "lucide-react";
+import { Search, Plus, Heart, Package, LogOut, LogIn, Menu, X, Home, School, MessageCircle, Loader2, ShieldAlert, ShieldCheck, Sparkles, User as UserIcon } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
 import { useState, useTransition, useRef } from "react";
 import { cn } from "@/lib/utils";
@@ -13,6 +13,8 @@ type User = {
   name: string;
   email?: string;
   isAdmin?: boolean;
+  isVerified?: boolean;
+  isPremium?: boolean;
   campusId?: string;
   campus?: { id: string; name: string };
 };
@@ -150,6 +152,24 @@ export function Navbar({
                     )}
                   </Link>
                 )}
+                <Link
+                  href="/profile"
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-border/80 hover:bg-muted text-xs font-semibold text-foreground transition-colors"
+                  title="My Profile & Verification"
+                >
+                  <UserIcon className="h-4 w-4 text-primary" />
+                  <span className="hidden lg:inline max-w-[100px] truncate">{user.name}</span>
+                  {user.isVerified && (
+                    <span title="Verified Campus Student">
+                      <ShieldCheck className="h-3.5 w-3.5 text-blue-500 fill-blue-500/20" />
+                    </span>
+                  )}
+                  {user.isPremium && (
+                    <span title="Premium Member">
+                      <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                    </span>
+                  )}
+                </Link>
                 <Link
                   href="/listings/create"
                   className="flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-sm font-semibold text-white hover:bg-primary-hover transition-colors shadow-sm"
@@ -290,6 +310,28 @@ export function Navbar({
                       )}
                     </Link>
                   )}
+                  <Link
+                    href="/profile"
+                    className="flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    <span className="flex items-center gap-2.5">
+                      <UserIcon className="h-4 w-4 text-primary" />
+                      <span>Profile & Verification</span>
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      {user.isVerified && (
+                        <span className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold text-[10px] flex items-center gap-1">
+                          <ShieldCheck className="h-3 w-3" /> Verified
+                        </span>
+                      )}
+                      {user.isPremium && (
+                        <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 font-bold text-[10px]">
+                          Premium ✨
+                        </span>
+                      )}
+                    </div>
+                  </Link>
                   <Link
                     href="/listings/create"
                     className="flex items-center gap-2.5 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white"

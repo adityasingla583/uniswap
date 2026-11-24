@@ -31,6 +31,8 @@ export default async function RootLayout({
     name: string;
     email?: string;
     isAdmin?: boolean;
+    isVerified?: boolean;
+    isPremium?: boolean;
     campusId: string;
     campus: { id: string; name: string };
   } | null = null;
@@ -43,10 +45,12 @@ export default async function RootLayout({
         name: string;
         email: string;
         isAdmin: boolean;
+        isVerified: boolean;
+        isPremium: boolean;
         campusId: string;
         campusName: string | null;
       }>(
-        `SELECT u.id, u.name, u.email, u."isAdmin", u."campusId", c.name as "campusName"
+        `SELECT u.id, u.name, u.email, u."isAdmin", u."isVerified", u."isPremium", u."campusId", c.name as "campusName"
          FROM "User" u
          LEFT JOIN "Campus" c ON c.id = u."campusId"
          WHERE u.id = $1 LIMIT 1`,
@@ -66,15 +70,22 @@ export default async function RootLayout({
           name: row.name,
           email: row.email,
           isAdmin: isMasterAdmin,
+          isVerified: Boolean(row.isVerified),
+          isPremium: Boolean(row.isPremium),
           campusId: row.campusId,
           campus: { id: row.campusId, name: row.campusName || "Campus" },
         };
 
         if (isMasterAdmin) {
           const countRes = await pool.query<{ count: string }>(
-            `SELECT count(*) FROM "CampusRequest" WHERE status = 'PENDING'`
+            `SELECT count(*) FROM "CampusRequest" WHERE status IN ('PENDING', 'UNDER_REVIEW')`
           );
-          pendingAdminNotifications = parseInt(countRes.rows[0]?.count || "0", 10);
+          const verCountRes = await pool.query<{ count: string }>(
+            `SELECT count(*) FROM "VerificationRequest" WHERE status = 'PENDING'`
+          );
+          pendingAdminNotifications =
+            parseInt(countRes.rows[0]?.count || "0", 10) +
+            parseInt(verCountRes.rows[0]?.count || "0", 10);
         }
       }
     } catch {

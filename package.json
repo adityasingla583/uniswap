@@ -25,6 +25,7 @@
     "nodemailer": "^10.2.1",
     "pg": "^8.23.1",
     "prisma": "^7.10.1",
+    "razorpay": "^2.9.8",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "server-only": "^0.0.1",
